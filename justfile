@@ -98,13 +98,61 @@ status:
     echo "=== Environment ==="
     [ -n "${OPENROUTER_API_KEY:-}" ] && echo "  OPENROUTER_API_KEY: set" || echo "  OPENROUTER_API_KEY: NOT SET"
     [ -n "${TAVILY_API_KEY:-}" ]     && echo "  TAVILY_API_KEY: set"     || echo "  TAVILY_API_KEY: NOT SET"
-    [ -n "${GITHUB_TOKEN:-}" ]       && echo "  GITHUB_TOKEN: set"       || echo "  GITHUB_TOKEN: NOT SET"
+
+# Verify harness structure and OMP config
+test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ok=true
+    fail() { echo "  FAIL: $1"; ok=false; }
+    pass() { echo "  OK: $1"; }
+
+    echo "=== Config Files ==="
+    for f in config.yml models.yml mcp.json AGENTS.md; do
+        [ -f ~/.omp/agent/$f ] && pass "$f" || fail "$f missing"
+    done
+
+    echo ""
+    echo "=== Agents ==="
+    for a in frontend backend architect security qa legal finance researcher content-writer data-generator; do
+        [ -f ~/.omp/agent/agents/$a.md ] && pass "$a" || fail "$a missing"
+    done
+
+    echo ""
+    echo "=== Skills ==="
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator; do
+        [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
+    done
+
+    echo ""
+    echo "=== Commands ==="
+    for c in intro onboard; do
+        [ -f ~/.omp/agent/commands/$c.md ] && pass "$c" || fail "$c missing"
+    done
+
+    echo ""
+    echo "=== Rules ==="
+    for r in python-style typescript-style pr-size-limit omp-tips; do
+        [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
+    done
+
+    echo ""
+    echo "=== OMP Config ==="
+    grep -q "disabledProviders" ~/.omp/agent/config.yml && pass "disabledProviders" || fail "disabledProviders missing"
+    grep -q "modelRoles" ~/.omp/agent/config.yml && pass "modelRoles" || fail "modelRoles missing"
+    grep -q "backend: mnemopi" ~/.omp/agent/config.yml && pass "memory = mnemopi" || fail "memory backend"
+    grep -q "openrouter" ~/.omp/agent/models.yml && pass "OpenRouter provider" || fail "OpenRouter missing"
+    grep -q "context7" ~/.omp/agent/mcp.json && pass "Context7 MCP" || fail "Context7 missing"
+    grep -q "tavily" ~/.omp/agent/mcp.json && pass "Tavily MCP" || fail "Tavily missing"
+
+    echo ""
+    $ok && echo "All checks passed." || { echo "Some checks failed."; exit 1; }
 
 # Check required environment variables
 check-env:
     #!/usr/bin/env bash
     ok=true
-    for var in OPENROUTER_API_KEY TAVILY_API_KEY GITHUB_TOKEN; do
+    for var in OPENROUTER_API_KEY TAVILY_API_KEY; do
         if [ -z "${!var:-}" ]; then
             echo "MISSING: $var"
             ok=false

@@ -1,0 +1,19 @@
+providers:
+  openrouter:
+    baseUrl: https://openrouter.ai/api/v1
+    apiKey: OPENROUTER_API_KEY
+    api: openai-completions
+
+  ollama:
+    baseUrl: http://127.0.0.1:11434
+    api: openai-responses
+    auth: none
+    discovery:
+      type: ollama
+
+retry:
+  fallbackChains:
+    "@default":
+      - anthropic/claude-sonnet-4
+      - google/gemini-2.5-pro
+      - google/gemini-2.5-flash

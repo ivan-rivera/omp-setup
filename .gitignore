@@ -18,6 +18,11 @@ Thumbs.db
 .claude/
 .remember/
 
+# OMP runtime databases (created automatically in harness/)
+*.db
+*.db-shm
+*.db-wal
+
 # Node
 node_modules/
 
