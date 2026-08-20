@@ -35,9 +35,18 @@ modelRoles:
   research-optimal: z-ai/glm-5.3
   research: research-cheap  # default tier
   
+  # General tiers — switch with /model @cheap, /model @super-cheap (Ctrl+P cycles)
+  super-cheap: deepseek/deepseek-v4-flash-0731
+  cheap: google/gemini-3.7-flash
+
   # Cross-cutting roles
   advisor: z-ai/glm-5.3
   default: z-ai/glm-5.3
+# Ctrl+P model cycling: cheapest -> most capable
+cycleOrder:
+  - super-cheap
+  - cheap
+  - default
 memory: 
   backend: mnemopi
 memories: 
