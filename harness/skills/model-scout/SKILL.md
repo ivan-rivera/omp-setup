@@ -16,10 +16,11 @@ This harness uses a role-based model routing system:
 - **`harness/config.yml`** under `modelRoles:` — maps role names to specific models
 - **Agent frontmatter** — each agent references a role (e.g., `model: "@code-balanced"`)
 
-Roles follow a `{domain}-{tier}` convention:
-- **Domains**: `code`, `reason`, `content`, `research`, `orch` (orchestration)
-- **Tiers**: `best` (max quality), `balanced` (default, cost/quality optimised), `fast` (speed/throughput), `free` (zero cost)
-- **Cross-cutting**: `advisor`, `fast`, `local`, `default`
+Roles follow a simplified `{domain}-{tier}` convention:
+- **Domains**: `code`, `reason`, `content`, `research` 
+- **Tiers**: `cheap` (cost-optimized), `optimal` (best quality)
+- **Defaults**: Each domain has a default tier (e.g., `code: code-optimal`)
+- **Cross-cutting**: `advisor`, `default`
 
 ## Process
 
@@ -49,27 +50,40 @@ Also check these sources if available:
 | Creative writing / content | `content-*` | content-writer |
 | Data extraction / instruction following | `fast`, `orch-*` | data-generator, orchestration |
 
-### 3. Recommend Models Per Tier
+### 3. Generate Performance Report
+
+When user asks for a performance report, create a detailed table with:
+
+| Task | Model | ELO/Score | Cost/1M (in/out) | Benchmark Source |
+|------|-------|-----------|------------------|------------------|
+| Code Generation | google/gemini-3.7-flash | Coding: 76.1 | $0.375/$1.875 | Artificial Analysis |
+| Reasoning | z-ai/glm-5.3 | Arena: 1580+ | $1.4/$4.4 | LMSYS Arena |
+| Content Writing | deepseek/deepseek-v4-flash | N/A | $0.14/$0.28 | OpenRouter |
+| Research | google/gemini-2.5-pro | Intelligence: 56 | $3.5/$14 | Artificial Analysis |
+
+Include notes on:
+- **Benchmark Sources**: Arena ELO, Artificial Analysis indices, or "N/A" if unavailable
+- **Task Performance**: Specific scores for coding, reasoning, intelligence indices
+- **Cost Efficiency**: $/1M tokens for input and output
+- **Recommendations**: Which models are best for each task and tier
+
+### 4. Recommend Models Per Tier
 
 For each domain, recommend the best model at each tier:
 
 | Tier | Selection Criteria |
 |------|-------------------|
-| `best` | Highest benchmark score, cost secondary |
-| `balanced` | Best score-per-dollar ratio |
-| `fast` | Lowest latency and highest throughput, acceptable quality |
-| `free` | Free-tier models on OpenRouter with acceptable quality |
+| `optimal` | Highest benchmark score for the domain |
+| `cheap` | Best score-per-dollar ratio, acceptable quality |
 
 Present recommendations as a comparison table:
 
-```
 | Role             | Current Model              | Recommended Model          | Benchmark Delta | Cost Delta |
 |------------------|---------------------------|---------------------------|-----------------|------------|
-| code-balanced    | anthropic/claude-sonnet-4  | anthropic/claude-sonnet-4  | (no change)     | —          |
-| reason-best      | anthropic/claude-opus-4    | anthropic/claude-opus-4.1  | +3% GPQA        | +$2/1M     |
-```
+| code-optimal     | google/gemini-3.7-flash    | google/gemini-3.7-flash    | (no change)     | —          |
+| reason-optimal   | z-ai/glm-5.3              | claude-opus-5              | +42 Arena ELO   | +$3.6/1M   |
 
-### 4. Present Diff and Get Approval
+### 5. Present Analysis and Get Approval
 
 Show the user:
 1. A table of proposed changes (current → recommended, with benchmark and cost deltas)

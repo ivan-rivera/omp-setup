@@ -1,6 +1,4 @@
-# Disable all external config discovery sources.
-# OMP reads ONLY from its native .omp/ directories (our harness/ symlink).
-disabledProviders:
+disabledProviders: 
   - claude
   - claude-plugins
   - codex
@@ -8,68 +6,46 @@ disabledProviders:
   - windsurf
   - cline
   - github
-
-# Also disable Claude-specific skill/command discovery toggles
-skills:
+skills: 
   enableClaudeUser: false
   enableClaudeProject: false
-commands:
+commands: 
   enableClaudeUser: false
   enableClaudeProject: false
-
-tools:
+tools: 
   approval: write
-
-# Model roles: {domain}-{tier} convention
-# TBD entries are placeholders for model-scout to fill based on benchmarks
 modelRoles:
-  # Code domain
-  code-best: TBD
-  code-balanced: anthropic/claude-sonnet-4
-  code-fast: google/gemini-2.5-flash
-  code-free: TBD
-
-  # Reasoning domain
-  reason-best: anthropic/claude-opus-4
-  reason-balanced: anthropic/claude-sonnet-4
-  reason-fast: google/gemini-2.5-flash
-  reason-free: TBD
-
-  # Content domain
-  content-best: TBD
-  content-balanced: anthropic/claude-sonnet-4
-  content-fast: google/gemini-2.5-flash
-  content-free: TBD
-
-  # Research domain
-  research-best: TBD
-  research-balanced: google/gemini-2.5-pro
-  research-fast: google/gemini-2.5-flash
-  research-free: TBD
-
-  # Orchestration domain
-  orch-best: TBD
-  orch-balanced: anthropic/claude-sonnet-4
-  orch-fast: google/gemini-2.5-flash
-  orch-free: TBD
-
-  # Cross-cutting
-  advisor: openai/gpt-4.1
-  fast: google/gemini-2.5-flash
-  local: ollama/placeholder
-
-  # Default fallback
-  default: anthropic/claude-sonnet-4
-
-# Memory: mnemopi backend (local SQLite)
-memory:
+  # Code generation - default: optimal  
+  code-cheap: deepseek/deepseek-v4-flash-0731
+  code-optimal: google/gemini-3.7-flash
+  code: code-optimal  # default tier
+  
+  # Reasoning & orchestration - default: optimal
+  reason-cheap: google/gemini-3.7-flash
+  reason-optimal: z-ai/glm-5.3
+  reason: reason-optimal  # default tier
+  
+  # Content creation - default: cheap
+  content-cheap: deepseek/deepseek-v4-flash-0731
+  content-optimal: z-ai/glm-5.3
+  content: content-cheap  # default tier
+  
+  # Research & analysis - default: cheap  
+  research-cheap: deepseek/deepseek-v4-flash-0731
+  research-optimal: z-ai/glm-5.3
+  research: research-cheap  # default tier
+  
+  # Cross-cutting roles
+  advisor: z-ai/glm-5.3
+  default: z-ai/glm-5.3
+memory: 
   backend: mnemopi
-memories:
+memories: 
   maxRolloutAgeDays: 30
   minRolloutIdleHours: 12
   summaryInjectionTokenLimit: 3000
-
-mnemopi:
+mnemopi: 
   retainEveryNTurns: 4
   recallLimit: 8
   injectionTokenLimit: 3000
+setupVersion: 1
