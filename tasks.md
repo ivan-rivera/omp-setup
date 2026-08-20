@@ -840,7 +840,7 @@ Wire everything together: ensure the justfile's `link` target correctly symlinks
 - [x] Add `test` target to justfile (automated checks where possible)
 - [x] Create minimal `README.md` with setup instructions
 - [x] Fix any issues found during integration testing
-- [ ] Final commit and push
+- [x] Final commit and push
 
 ### Notes
 
