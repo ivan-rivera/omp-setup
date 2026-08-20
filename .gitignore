@@ -2,6 +2,10 @@
 .omp/sessions/
 .omp/plugins/
 .omp/natives/
+harness/config.yml.lock
+harness/last-changelog-version
+harness/sessions/
+harness/terminal-sessions/
 
 # OS
 .DS_Store
