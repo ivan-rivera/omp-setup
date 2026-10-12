@@ -50,6 +50,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:skill-creator` | wants to create a new OMP skill |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
 | `/skill:impeccable` | wants frontend/UI design work: shaping, critique, polish, audit, bolder/quieter, animation, or a design-system pass |
+| `/skill:ppt-master` | wants a slide deck, presentation, or PPTX generated from a topic or document, or an existing deck beautified, restyled, filled, animated, or narrated |
 
 ## Feature Discovery
 
