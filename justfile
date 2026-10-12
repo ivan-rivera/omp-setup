@@ -28,8 +28,23 @@ install-omp:
     bun install -g @oh-my-pi/pi-coding-agent
     @echo "OMP version: $(omp --version 2>/dev/null || echo 'not found in PATH — restart shell')"
 
-# Install OMP plugins (populated as needed)
+# Install OMP plugins: the impeccable design skill via the pbakaus/impeccable
+# marketplace. Loaded by the claude-plugins provider (see harness/config.yml).
 install-plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    omp plugin marketplace list 2>/dev/null | grep -q 'pbakaus/impeccable' \
+        || omp plugin marketplace add pbakaus/impeccable
+    grep -q '"impeccable@impeccable"' "$HOME/.omp/plugins/installed_plugins.json" 2>/dev/null \
+        || omp plugin install impeccable@impeccable --scope user
+    echo "  impeccable plugin: $(omp plugin list | grep -o 'impeccable@impeccable ([^)]*) ([^)]*)')"
+
+# Update the impeccable plugin to the latest published upstream version
+update-impeccable:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    omp plugin marketplace update impeccable
+    omp plugin upgrade impeccable@impeccable
 
 # Install/update the OCR (open-code-review) CLI and pin its OpenRouter config.
 # Rerunning this target updates the CLI to the latest published version.
@@ -162,6 +177,18 @@ test:
     echo ""
     echo "=== OCR (code review) ==="
     command -v ocr >/dev/null 2>&1 && pass "ocr CLI installed" || fail "ocr CLI missing (run: just install-ocr)"
+
+    echo ""
+    echo "=== OMP Plugins ==="
+    grep -q '"impeccable@impeccable"' "$HOME/.omp/plugins/installed_plugins.json" 2>/dev/null \
+        && pass "impeccable plugin" \
+        || fail "impeccable plugin missing (run: just install-plugins)"
+
+    echo ""
+    echo "=== Hooks ==="
+    [ -f ~/.omp/agent/hooks/post/impeccable-design.ts ] \
+        && pass "impeccable design detector" \
+        || fail "impeccable design detector missing"
 
     echo ""
     echo "=== OMP Config ==="

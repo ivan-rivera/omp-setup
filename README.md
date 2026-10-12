@@ -38,9 +38,9 @@ Check with `just check-env`.
 | Target | Purpose |
 |--------|---------|
 | `just setup` | Full install + symlink |
-| `just install` | Install deps, OMP, plugins, OCR |
+| `just install-plugins` | Register the impeccable marketplace, install the design skill plugin |
+| `just update-impeccable` | Pull the latest impeccable skill version from upstream |
 | `just install-ocr` | Install/update the `ocr` CLI, pin its OpenRouter config |
-| `just link` | Symlink harness to ~/.omp/agent/ |
 | `just unlink` | Remove symlink, optionally restore backup |
 | `just status` | Show symlink, OMP version, env vars |
 | `just test` | Verify harness structure and config |
@@ -57,9 +57,14 @@ Check with `just check-env`.
 - **Memory**: mnemopi (local SQLite)
 - **MCPs**: Context7, Tavily
 - **OCR code-review gate**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` reviews diffs/commits/branches before a PR ships
+- **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
+- **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 
 ## Updating
 
 From within this repo, run `/update` in OMP to check for new OMP releases and propose harness revisions.
 
 To update model assignments based on benchmarks, run `/skill:model-scout` in any OMP session.
+
+To pull the latest impeccable skill from upstream: `just update-impeccable` (or `omp plugin marketplace update impeccable && omp plugin upgrade impeccable@impeccable` — same flow as `/marketplace update` + `/marketplace upgrade` in a session).
+
