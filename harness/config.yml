@@ -1,6 +1,9 @@
 disabledProviders:
   - claude
-  - claude-plugins
+  # claude-plugins must stay enabled: it is the provider that loads OMP marketplace
+  # plugin installs under ~/.omp/plugins (e.g. the impeccable design skill).
+  # Claude Code's own ~/.claude registry is separately gated behind the
+  # enabledProviders opt-in and stays unloaded.
   - codex
   - cursor
   - windsurf
