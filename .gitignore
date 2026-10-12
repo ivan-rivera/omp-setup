@@ -27,6 +27,11 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
+# Skills fetched from upstream (just install-brag)
+harness/skills/brag/
+harness/skills/brag-slim/
+harness/skills/.staging-brag/
+
 # Node
 node_modules/
 

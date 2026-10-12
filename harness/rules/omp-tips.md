@@ -49,6 +49,8 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:extension-creator` | wants to build a custom OMP extension |
 | `/skill:skill-creator` | wants to create a new OMP skill |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
+| `/skill:brag` | wants a short, shareable launch video for a project or live site URL — music, motion, share copy (installed via `just install-brag`) |
+| `/skill:brag-slim` | wants the same launch video built with local tools only, no Hyperframes (installed via `just install-brag`) |
 
 ## Feature Discovery
 

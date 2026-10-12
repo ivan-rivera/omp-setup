@@ -7,8 +7,8 @@ ocr_model     := env_var_or_default("OCR_MODEL", "z-ai/glm-5.3")
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, and the OCR code-review CLI
-install: install-deps install-omp install-plugins install-ocr
+# Install all dependencies, OMP, plugins, the OCR CLI, and the brag launch-video skills
+install: install-deps install-omp install-plugins install-ocr install-brag
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -21,6 +21,10 @@ install-deps:
     @command -v node >/dev/null 2>&1 \
         && echo "  node $(node --version) already installed" \
         || { echo "  Installing node via brew..."; brew install node; }
+    @echo "Checking ffmpeg (encodes /skill:brag videos)..."
+    @command -v ffmpeg >/dev/null 2>&1 \
+        && echo "  ffmpeg already installed" \
+        || { echo "  Installing ffmpeg via brew..."; brew install ffmpeg; }
 
 # Install Oh-My-Pi globally via bun
 install-omp:
@@ -46,6 +50,40 @@ install-ocr:
     else
         echo "  Warning: OPENROUTER_API_KEY not set — skipped 'ocr llm test' (key is read from the environment at review time)."
     fi
+# Install/update the brag launch-video skills from upstream (latent-spaces/brag).
+# Fetches skills/brag{,-slim} into gitignored harness/skills/ — this repo carries only the recipe.
+# Pass a branch/tag (or commit SHA — falls back to a full fetch) to pin a version: just install-brag v0.4.0
+install-brag ref="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    git clone --quiet --depth 1 https://github.com/latent-spaces/brag.git "$tmp/brag"
+    if [ -n "{{ref}}" ]; then
+        [[ "{{ref}}" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "Invalid ref: {{ref}}" >&2; exit 1; }
+        if git -C "$tmp/brag" fetch --quiet --depth 1 origin "{{ref}}"; then
+            git -C "$tmp/brag" checkout --quiet FETCH_HEAD
+        else
+            git -C "$tmp/brag" fetch --quiet --unshallow
+            git -C "$tmp/brag" checkout --quiet "{{ref}}"
+        fi
+    fi
+    commit=$(git -C "$tmp/brag" rev-parse --short=12 HEAD)
+    # Verify sources, then stage the swap — an abort must never leave neither old nor new.
+    [ -d "$tmp/brag/skills/brag" ] && [ -d "$tmp/brag/skills/brag-slim" ] && [ -f "$tmp/brag/LICENSE" ] \
+        || { echo "Upstream does not ship skills/brag{,-slim} + LICENSE — aborting, previous install kept." >&2; exit 1; }
+    staging="{{ harness_dir }}/skills/.staging-brag"
+    rm -rf "$staging"
+    mkdir -p "$staging"
+    cp -R "$tmp/brag/skills/brag" "$staging/brag"
+    cp -R "$tmp/brag/skills/brag-slim" "$staging/brag-slim"
+    cp "$tmp/brag/LICENSE" "$staging/brag/LICENSE"
+    cp "$tmp/brag/LICENSE" "$staging/brag-slim/LICENSE"
+    printf '%s\n' "$commit" | tee "$staging/brag/.upstream-commit" > "$staging/brag-slim/.upstream-commit"
+    rm -rf "{{ harness_dir }}/skills/brag" "{{ harness_dir }}/skills/brag-slim"
+    mv "$staging/brag" "$staging/brag-slim" "{{ harness_dir }}/skills/"
+    rmdir "$staging"
+    echo "Installed brag + brag-slim skills at upstream commit $commit → {{ harness_dir }}/skills/ (gitignored)"
 
 # Full setup: install everything and symlink harness
 setup: install link
@@ -145,6 +183,15 @@ test:
     echo "=== Skills ==="
     for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
+    done
+    echo ""
+    echo "=== Optional Skills (fetched from upstream: just install-brag) ==="
+    for s in brag brag-slim; do
+        if [ -f ~/.omp/agent/skills/$s/SKILL.md ]; then
+            pass "$s ($(cat ~/.omp/agent/skills/$s/.upstream-commit 2>/dev/null || echo '?'))"
+        else
+            echo "  NOTE: $s not installed (optional — run: just install-brag)"
+        fi
     done
 
     echo ""
