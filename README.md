@@ -62,7 +62,7 @@ Check with `just check-env`.
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
 - **MCPs**: Context7, Tavily
-- **OCR code-review gate**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` reviews diffs/commits/branches before a PR ships
+- **OCR code review (manual-only)**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` or plain "review this" language runs it on explicit request; no hooks/automation by design
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
 - **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 - **Launch videos**: `/skill:brag` (full, Hyperframes-rendered) and `/skill:brag-slim` (local tools) — **not vendored**; fetched from [latent-spaces/brag](https://github.com/latent-spaces/brag) via `just install-brag` (included in `just install`). Update = rerun the same target; optionally pin a ref: `just install-brag v0.4.0`

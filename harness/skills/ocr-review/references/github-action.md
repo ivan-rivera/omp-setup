@@ -1,6 +1,6 @@
 # GitHub Action — event-driven OCR on every PR
 
-When the user wants OCR to run automatically on PRs (independent of any agent session), posting inline review comments. Complements the local skill: local review = pre-ship self-critique gate; CI review = independent verification after push, re-running on every new commit.
+Opt-in per repo. The local harness keeps OCR manual-only (no hooks — automated runs tend to get stuck); this Action covers the case where the user explicitly wants OCR to also run automatically in CI, posting inline review comments with the job timeout bounding any hang. Local review = on-demand pre-ship self-critique; CI review = independent verification after push, re-running on every new commit.
 
 ## Setup (per repo)
 

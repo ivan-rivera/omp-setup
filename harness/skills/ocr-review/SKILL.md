@@ -1,10 +1,10 @@
 ---
 name: ocr-review
-description: "Independent AI code review via the `ocr` CLI (Alibaba open-code-review, already installed and configured with OpenRouter). Use whenever finishing or opening a PR, pushing a feature branch, or before shipping a changeset; and when the user asks to review code, critique or self-review changes, run OCR/open-code-review, or find bugs/security/performance issues in a diff, commit, or branch. Not for optical character recognition (scanning documents or images)."
+description: "Independent AI code review via the `ocr` CLI (Alibaba open-code-review, already installed and configured with OpenRouter). Manual-only: run when the user explicitly asks — via /skill:ocr-review, or natural language like 'review this diff/PR/branch', 'run OCR', 'critique or self-review my changes', or 'find bugs/security/performance issues in a diff, commit, or branch'. Never self-trigger at PR/push/ship time and never wrap it in hooks or automation — runs occasionally hang. Not for optical character recognition (scanning documents or images)."
 alwaysApply: false
 ---
 
-# OCR — Independent Review Gate
+# OCR — On-Demand Independent Review
 
 `ocr` (npm: `@alibaba-group/open-code-review`) reviews Git diffs with a deterministic pipeline (file selection, bundling, rule matching) plus a tool-using LLM agent — different signal from reviewing the code yourself, which is the point: it's an external critic for the self-critique loop.
 
@@ -12,11 +12,13 @@ Already set up on this machine: provider `openrouter`, model `z-ai/glm-5.3`, key
 
 ## When to run
 
-- **PR gate (self-critique loop)** — whenever work is about to ship as a PR or pushed branch: run the review on the staged/committed change before or immediately after `gh pr create`. Fix real findings, re-review, then ship.
-- **Explicit review** — user asks for a review without fix intent: report only, ask before touching code.
+Manual-only, by design: no hook or automation fires it, because OCR runs occasionally hang. Run it only when the user explicitly asks — `/skill:ocr-review`, 'review this diff/PR/branch', 'run OCR', 'critique my changes' — and never on your own just because work is about to ship; suggest it instead.
+
+- **Review with fix intent** — run the loop protocol below on the staged/committed change, fix real findings, re-review, then ship.
+- **Review without fix intent** — report only, ask before touching code.
 - Not OCR's job: optical character recognition on documents/images.
 
-## Loop protocol (PR gate)
+## Loop protocol (review with fix intent)
 
 1. Determine the base ref (`main` by default; the PR's base branch if known). Skim the change and write 1–2 sentences of business context (what + why) — passing it via `--background` measurably improves review quality.
 2. Run the review (see Command patterns).
