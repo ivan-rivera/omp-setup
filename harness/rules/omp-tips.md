@@ -48,6 +48,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:frontend-design` | is making visual design decisions for UI |
 | `/skill:extension-creator` | wants to build a custom OMP extension |
 | `/skill:skill-creator` | wants to create a new OMP skill |
+| `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
 
 ## Feature Discovery
 

@@ -1,13 +1,14 @@
 omp_agent_dir := env("HOME") / ".omp" / "agent"
 harness_dir   := justfile_directory() / "harness"
 backup_suffix := `date +%Y-%m-%d`
+ocr_model     := env_var_or_default("OCR_MODEL", "z-ai/glm-5.3")
 
 # Show all available targets
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, and plugins
-install: install-deps install-omp install-plugins
+# Install all dependencies, OMP, plugins, and the OCR code-review CLI
+install: install-deps install-omp install-plugins install-ocr
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -29,7 +30,22 @@ install-omp:
 
 # Install OMP plugins (populated as needed)
 install-plugins:
-    @echo "No plugins to install yet."
+
+# Install/update the OCR (open-code-review) CLI and pin its OpenRouter config.
+# Rerunning this target updates the CLI to the latest published version.
+install-ocr:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Installing/updating Open Code Review (ocr)..."
+    npm install -g @alibaba-group/open-code-review@latest
+    echo "  Installed: $(ocr --version 2>/dev/null | head -1 || true)"
+    ocr config set provider openrouter
+    ocr config set model "{{ ocr_model }}"
+    if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+        ocr llm test
+    else
+        echo "  Warning: OPENROUTER_API_KEY not set — skipped 'ocr llm test' (key is read from the environment at review time)."
+    fi
 
 # Full setup: install everything and symlink harness
 setup: install link
@@ -95,6 +111,13 @@ status:
         echo "  Not installed"
     fi
     echo ""
+    echo "=== OCR (code review) ==="
+    if command -v ocr >/dev/null 2>&1; then
+        echo "  Version: $(ocr --version 2>/dev/null | head -1)"
+    else
+        echo "  Not installed (run: just install-ocr)"
+    fi
+    echo ""
     echo "=== Environment ==="
     [ -n "${OPENROUTER_API_KEY:-}" ] && echo "  OPENROUTER_API_KEY: set" || echo "  OPENROUTER_API_KEY: NOT SET"
     [ -n "${TAVILY_API_KEY:-}" ]     && echo "  TAVILY_API_KEY: set"     || echo "  TAVILY_API_KEY: NOT SET"
@@ -120,7 +143,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
 
@@ -135,6 +158,10 @@ test:
     for r in python-style typescript-style pr-size-limit omp-tips; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
+
+    echo ""
+    echo "=== OCR (code review) ==="
+    command -v ocr >/dev/null 2>&1 && pass "ocr CLI installed" || fail "ocr CLI missing (run: just install-ocr)"
 
     echo ""
     echo "=== OMP Config ==="
