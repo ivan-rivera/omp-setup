@@ -21,11 +21,11 @@ modelRoles:
   # Four conceptual models (see skills/model-scout). Working lineup 2026-10-10: all GLM 5.3.
   # default: general-purpose workhorse (intelligence benchmarks)
   # code: code generation (coding benchmarks) | agentic: task execution (agentic benchmarks)
+  # Oracle: top-tier consult — ONLY user-approved paths (/advisor on, Ctrl+P). Never automatic.
   default: openrouter/z-ai/glm-5.3
   code: openrouter/z-ai/glm-5.3
   agentic: openrouter/z-ai/glm-5.3
   task: "@agentic"
-  # Oracle: top-tier consult — ONLY user-approved paths (/advisor on, Ctrl+P). Never automatic.
   oracle: openrouter/anthropic/claude-opus-5.5
   advisor: "@oracle"
 cycleOrder:
@@ -48,3 +48,5 @@ mnemopi:
 setupVersion: 2
 composer:
   shape: band
+temperature: 0.6
+minP: 0.05
