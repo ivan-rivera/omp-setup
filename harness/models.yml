@@ -3,6 +3,17 @@ providers:
     baseUrl: https://openrouter.ai/api/v1
     apiKey: OPENROUTER_API_KEY
     api: openai-completions
+    # glm-5.3 is served by ~40 OpenRouter endpoints at mixed quantization
+    # (fp4..fp8); fp4/nvfp4 hosts intermittently emit degenerate "token
+    # salad". Prefer the official z.ai endpoint plus reputable fp8 hosts;
+    # OpenRouter falls back to the remaining endpoints only if every
+    # listed host is down (provider.order, see openrouter.ai/docs/
+    # provider-routing). Oracle/other models are unaffected (per-model).
+    modelOverrides:
+      z-ai/glm-5.3:
+        compat:
+          openRouterRouting:
+            order: [z-ai, siliconflow, novita, baidu, parasail, akashml, gmicloud]
 
   ollama:
     baseUrl: http://127.0.0.1:11434
