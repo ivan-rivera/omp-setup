@@ -2,13 +2,18 @@ omp_agent_dir := env("HOME") / ".omp" / "agent"
 harness_dir   := justfile_directory() / "harness"
 backup_suffix := `date +%Y-%m-%d`
 ocr_model     := env_var_or_default("OCR_MODEL", "z-ai/glm-5.3")
+ppt_repo    := "https://github.com/hugohe3/ppt-master.git"
+ppt_vendor  := justfile_directory() / "vendor" / "ppt-master"
+ppt_skill   := harness_dir / "skills" / "ppt-master"
+ppt_venv    := env("HOME") / ".local" / "share" / "ppt-master" / "venv"
+ppt_python  := env("HOME") / ".local" / "bin" / "python3"
 
 # Show all available targets
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, and the brag launch-video skills
-install: install-deps install-omp install-plugins install-ocr install-brag
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, and the brag launch-video skills
+install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -32,8 +37,23 @@ install-omp:
     bun install -g @oh-my-pi/pi-coding-agent
     @echo "OMP version: $(omp --version 2>/dev/null || echo 'not found in PATH — restart shell')"
 
-# Install OMP plugins (populated as needed)
+# Install OMP plugins: the impeccable design skill via the pbakaus/impeccable
+# marketplace. Loaded by the claude-plugins provider (see harness/config.yml).
 install-plugins:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    omp plugin marketplace list 2>/dev/null | grep -q 'pbakaus/impeccable' \
+        || omp plugin marketplace add pbakaus/impeccable
+    grep -q '"impeccable@impeccable"' "$HOME/.omp/plugins/installed_plugins.json" 2>/dev/null \
+        || omp plugin install impeccable@impeccable --scope user
+    echo "  impeccable plugin: $(omp plugin list | grep -o 'impeccable@impeccable ([^)]*) ([^)]*)')"
+
+# Update the impeccable plugin to the latest published upstream version
+update-impeccable:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    omp plugin marketplace update impeccable
+    omp plugin upgrade impeccable@impeccable
 
 # Install/update the OCR (open-code-review) CLI and pin its OpenRouter config.
 # Rerunning this target updates the CLI to the latest published version.
@@ -84,6 +104,36 @@ install-brag ref="":
     mv "$staging/brag" "$staging/brag-slim" "{{ harness_dir }}/skills/"
     rmdir "$staging"
     echo "Installed brag + brag-slim skills at upstream commit $commit → {{ harness_dir }}/skills/ (gitignored)"
+
+# Install/update the PPT Master slide-generation skill: vendor clone, uv venv,
+# python3 wrapper, and Python deps. Rerunning pulls the latest upstream.
+install-ppt-master:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Installing/updating PPT Master..."
+    command -v uv >/dev/null 2>&1 || brew install uv
+    if [ -d "{{ ppt_vendor }}/.git" ]; then
+        echo "  Pulling latest upstream..."
+        git -C "{{ ppt_vendor }}" pull --ff-only
+    else
+        echo "  Cloning upstream (one-time, ~260MB)..."
+        git clone "{{ ppt_repo }}" "{{ ppt_vendor }}"
+    fi
+    if [ ! -x "{{ ppt_venv }}/bin/python3" ]; then
+        echo "  Creating Python 3.14 venv (uv)..."
+        uv python install 3.14
+        uv venv --python 3.14 --seed "{{ ppt_venv }}"
+    fi
+    echo "  Syncing Python dependencies..."
+    uv pip install --python "{{ ppt_venv }}/bin/python3" -r "{{ ppt_vendor }}/skills/ppt-master/requirements.txt"
+    echo "  Pointing python3 at the PPT Master venv (~/.local/bin/python3)..."
+    mkdir -p "$(dirname "{{ ppt_python }}")"
+    printf '#!/bin/sh\nexec "%s/bin/python3" "$@"\n' "{{ ppt_venv }}" > "{{ ppt_python }}.tmp"
+    mv "{{ ppt_python }}.tmp" "{{ ppt_python }}"
+    chmod +x "{{ ppt_python }}"
+    ln -sfn ../../vendor/ppt-master/skills/ppt-master "{{ ppt_skill }}"
+    echo "  Python: $("{{ ppt_python }}" --version 2>&1)"
+    echo "  Skill:  {{ ppt_skill }}"
 
 # Full setup: install everything and symlink harness
 setup: install link
@@ -160,6 +210,14 @@ status:
     [ -n "${OPENROUTER_API_KEY:-}" ] && echo "  OPENROUTER_API_KEY: set" || echo "  OPENROUTER_API_KEY: NOT SET"
     [ -n "${TAVILY_API_KEY:-}" ]     && echo "  TAVILY_API_KEY: set"     || echo "  TAVILY_API_KEY: NOT SET"
 
+    echo "=== PPT Master ==="
+    if [ -f "{{ ppt_skill }}/SKILL.md" ]; then
+        echo "  Skill: installed (vendor clone + uv venv + python3 wrapper)"
+        echo "  Python: $("{{ ppt_python }}" --version 2>&1 || echo missing)"
+    else
+        echo "  Not installed (run: just install-ppt-master)"
+    fi
+
 # Verify harness structure and OMP config
 test:
     #!/usr/bin/env bash
@@ -195,6 +253,19 @@ test:
     done
 
     echo ""
+    echo "=== PPT Master ==="
+    [ -f "{{ ppt_skill }}/SKILL.md" ] && pass "ppt-master skill resolves" || fail "ppt-master skill missing (run: just install-ppt-master)"
+    "{{ ppt_python }}" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null \
+        && pass "python3 >= 3.10" \
+        || fail "python3 >= 3.10 (run: just install-ppt-master)"
+    "{{ ppt_python }}" -c 'import pptx, fitz, pathops, uharfbuzz' 2>/dev/null \
+        && pass "ppt-master Python deps" \
+        || fail "ppt-master Python deps (run: just install-ppt-master)"
+    "{{ ppt_python }}" "{{ ppt_skill }}/scripts/attribution_guard.py" >/dev/null 2>&1 \
+        && pass "attribution guard (skill unmodified)" \
+        || fail "attribution guard — skill must stay unmodified (reinstall: just install-ppt-master)"
+
+    echo ""
     echo "=== Commands ==="
     for c in intro onboard; do
         [ -f ~/.omp/agent/commands/$c.md ] && pass "$c" || fail "$c missing"
@@ -209,6 +280,18 @@ test:
     echo ""
     echo "=== OCR (code review) ==="
     command -v ocr >/dev/null 2>&1 && pass "ocr CLI installed" || fail "ocr CLI missing (run: just install-ocr)"
+
+    echo ""
+    echo "=== OMP Plugins ==="
+    grep -q '"impeccable@impeccable"' "$HOME/.omp/plugins/installed_plugins.json" 2>/dev/null \
+        && pass "impeccable plugin" \
+        || fail "impeccable plugin missing (run: just install-plugins)"
+
+    echo ""
+    echo "=== Hooks ==="
+    [ -f ~/.omp/agent/hooks/post/impeccable-design.ts ] \
+        && pass "impeccable design detector" \
+        || fail "impeccable design detector missing"
 
     echo ""
     echo "=== OMP Config ==="
