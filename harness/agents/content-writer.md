@@ -1,7 +1,7 @@
 ---
 name: content-writer
 description: "Blog posts, documentation, landing pages, and marketing copy"
-model: "@content-balanced"
+model: "@default"
 tools: ["read", "write", "edit"]
 spawns: []
 advisor: false

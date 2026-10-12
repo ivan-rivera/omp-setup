@@ -1,7 +1,7 @@
 ---
 name: finance
 description: "Financial modelling, pricing strategy, and unit economics"
-model: "@reason-balanced"
+model: "@default"
 tools: ["read", "bash", "grep"]
 spawns: []
 advisor: false

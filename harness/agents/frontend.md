@@ -1,7 +1,7 @@
 ---
 name: frontend
 description: "Build web UI components, pages, and applications"
-model: "@code-balanced"
+model: "@code"
 tools: ["read", "write", "edit", "bash", "glob", "grep"]
 spawns: []
 advisor: false

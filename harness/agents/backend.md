@@ -1,7 +1,7 @@
 ---
 name: backend
 description: "Design and implement APIs, database schemas, and server-side logic"
-model: "@code-balanced"
+model: "@code"
 tools: ["read", "write", "edit", "bash", "glob", "grep"]
 spawns: []
 advisor: false

@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: "Market research, competitive analysis, and technical investigation"
-model: "@research-balanced"
+model: "@default"
 tools: ["read", "bash", "glob", "grep"]
 spawns: []
 advisor: false

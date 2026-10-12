@@ -1,10 +1,9 @@
 ---
 name: security
 description: "Threat modelling, vulnerability review, and security hardening"
-model: "@reason-best"
+model: "@default"
 tools: ["read", "bash", "glob", "grep"]
 spawns: []
-advisor: true
 autoloadSkills: []
 ---
 

@@ -1,10 +1,9 @@
 ---
 name: legal
 description: "Privacy policy, terms of service, compliance, and licensing review"
-model: "@reason-best"
+model: "@default"
 tools: ["read", "grep"]
 spawns: []
-advisor: true
 autoloadSkills: []
 ---
 

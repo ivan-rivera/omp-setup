@@ -1,10 +1,9 @@
 ---
 name: architect
 description: "System design, tradeoff analysis, and interface contracts"
-model: "@reason-best"
+model: "@default"
 tools: ["read", "glob", "grep", "bash"]
 spawns: ["frontend", "backend"]
-advisor: true
 autoloadSkills: ["brainstorming"]
 ---
 

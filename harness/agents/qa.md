@@ -1,7 +1,7 @@
 ---
 name: qa
 description: "Test strategy, automated tests, and quality assurance"
-model: "@code-balanced"
+model: "@code"
 tools: ["read", "write", "edit", "bash", "glob", "grep"]
 spawns: []
 advisor: false

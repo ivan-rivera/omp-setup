@@ -1,7 +1,7 @@
 ---
 name: data-generator
 description: "Synthetic datasets, test fixtures, mock data, and seed data"
-model: "@fast"
+model: "@agentic"
 tools: ["read", "write", "bash"]
 spawns: []
 advisor: false
