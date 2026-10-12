@@ -9,6 +9,7 @@ Personal Oh-My-Pi harness for a solo full-stack developer. Version-controlled ag
 - [node](https://nodejs.org) — for npx-based MCP servers
 - [gh](https://cli.github.com) — GitHub CLI (used directly, no MCP)
 - [git](https://git-scm.com) >= 2.41 — required by OCR for diff generation
+- [uv](https://docs.astral.sh/uv/) — Python manager for PPT Master (auto-installed by brew when needed)
 
 ## Setup
 
@@ -40,6 +41,7 @@ Check with `just check-env`.
 | `just setup` | Full install + symlink |
 | `just install` | Install deps, OMP, plugins, OCR |
 | `just install-ocr` | Install/update the `ocr` CLI, pin its OpenRouter config |
+| `just install-ppt-master` | Install/update the PPT Master slide-generation skill (vendor clone, uv venv, Python deps) |
 | `just link` | Symlink harness to ~/.omp/agent/ |
 | `just unlink` | Remove symlink, optionally restore backup |
 | `just status` | Show symlink, OMP version, env vars |
@@ -50,13 +52,32 @@ Check with `just check-env`.
 ## What's Included
 
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
-- **6 skills**: brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review
+- **7 skills**: brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored)
 - **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
 - **4 rules**: python-style, typescript-style, pr-size-limit, omp-tips
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
 - **MCPs**: Context7, Tavily
 - **OCR code-review gate**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` reviews diffs/commits/branches before a PR ships
+
+## PPT Master (slide generation)
+
+`/skill:ppt-master` in any OMP session turns a topic, PDF, DOCX, or pasted text into a natively
+editable `.pptx` (real shapes, charts, tables, speaker notes). Projects and exports land in the
+vendored clone under `vendor/ppt-master/projects/<name>/` — its scripts anchor to their repo root.
+Its machine state — the vendored clone (`vendor/ppt-master`), a dedicated uv venv
+(`~/.local/share/ppt-master/venv`), and a `python3` wrapper (`~/.local/bin/python3`) — is
+installed by `just install-ppt-master` and excluded from git. The skill ships an integrity gate
+(attribution guard), so it must stay unmodified; update by rerunning the target.
+
+- **Model**: upstream recommends large-context models (Kimi K3 / Claude); the default OpenRouter
+  model works with a quality gap — `/model` before long decks.
+- **Images**: zero-config web image search works out of the box. For AI generation, reuse your
+  existing `OPENROUTER_API_KEY` via `~/.ppt-master/.env` with `IMAGE_BACKEND=openrouter` and
+  `OPENROUTER_MODEL=google/gemini-nano-banana-2.1`. Optional free `PEXELS_API_KEY` /
+  `PIXABAY_API_KEY` improve web-search image quality.
+- **License**: the skill is MIT (Hugo He), vendored unmodified; the optional PyMuPDF dependency
+  is AGPL-3.0 (PDF sources only — relevant only if you redistribute a bundle that includes it).
 
 ## Updating
 

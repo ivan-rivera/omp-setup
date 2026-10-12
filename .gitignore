@@ -6,6 +6,9 @@ harness/config.yml.lock
 harness/last-changelog-version
 harness/sessions/
 harness/terminal-sessions/
+# Vendored third-party payloads (installed by `just install-ppt-master`)
+vendor/
+
 
 # OS
 .DS_Store

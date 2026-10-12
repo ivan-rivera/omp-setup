@@ -49,6 +49,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:extension-creator` | wants to build a custom OMP extension |
 | `/skill:skill-creator` | wants to create a new OMP skill |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
+| `/skill:ppt-master` | wants a slide deck, presentation, or PPTX generated from a topic or document, or an existing deck beautified, restyled, filled, animated, or narrated |
 
 ## Feature Discovery
 
