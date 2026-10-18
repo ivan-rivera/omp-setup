@@ -47,3 +47,9 @@ node_modules/
 !.env.example
 harness/custom-session-files/
 harness/predict/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
