@@ -7,13 +7,16 @@ ppt_vendor  := justfile_directory() / "vendor" / "ppt-master"
 ppt_skill   := harness_dir / "skills" / "ppt-master"
 ppt_venv    := env("HOME") / ".local" / "share" / "ppt-master" / "venv"
 ppt_python  := env("HOME") / ".local" / "bin" / "python3"
+composio_entry  := env("HOME") / ".local" / "bin" / "composio"
+composio_agents := env("HOME") / ".agents" / "skills" / "composio-cli"
+composio_skill  := harness_dir / "skills" / "composio-cli"
 
 # Show all available targets
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, and the brag launch-video skills
-install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, and the Composio CLI
+install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag install-composio
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -135,6 +138,30 @@ install-ppt-master:
     echo "  Python: $("{{ ppt_python }}" --version 2>&1)"
     echo "  Skill:  {{ ppt_skill }}"
 
+# Install/update the Composio CLI and materialize the composio-cli skill.
+# curl-installs the binary (~/.composio/composio, entry point ~/.local/bin/composio) with
+# --no-plugins (the installer's plugin auto-setup probes Claude Code and fails headless);
+# 'composio setup skill claude' then writes the canonical skill to ~/.agents/skills/composio-cli —
+# its ~/.claude symlink is removed (no Claude Code) and the skill is linked into gitignored
+# harness/skills/. 'composio login' is left to the user (it prints a login URL).
+install-composio:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Installing/updating the Composio CLI..."
+    curl -fsSL https://composio.dev/install | sh -s -- --no-plugins
+    # Verify the installer's entry point before configuring anything.
+    [ -x "{{ composio_entry }}" ] \
+        || { echo "Installer did not produce {{ composio_entry }} — aborting." >&2; exit 1; }
+    echo "  Installed: $("{{ composio_entry }}" --version 2>/dev/null | head -1 || echo unknown)"
+    echo "  Materializing the composio-cli skill (~/.agents/skills/composio-cli)..."
+    "{{ composio_entry }}" setup skill claude
+    [ -f "{{ composio_agents }}/SKILL.md" ] \
+        || { echo "'composio setup skill claude' did not create {{ composio_agents }}/SKILL.md — aborting." >&2; exit 1; }
+    rm -f "$HOME/.claude/skills/composio-cli"
+    ln -sfn "{{ composio_agents }}" "{{ composio_skill }}"
+    echo "  Skill:  {{ composio_skill }} -> {{ composio_agents }}"
+    echo "  Login:  run 'composio login' to authenticate (not run here — it prints a URL)"
+
 # Full setup: install everything and symlink harness
 setup: install link
 
@@ -217,6 +244,14 @@ status:
     else
         echo "  Not installed (run: just install-ppt-master)"
     fi
+    echo ""
+    echo "=== Composio CLI ==="
+    if [ -f "{{ composio_skill }}/SKILL.md" ]; then
+        echo "  Version: $("{{ composio_entry }}" --version 2>/dev/null | head -1 || echo unknown)"
+        echo "  Skill: installed (~/.agents/skills/composio-cli)"
+    else
+        echo "  Not installed (run: just install-composio)"
+    fi
 
 # Verify harness structure and OMP config
 test:
@@ -264,6 +299,11 @@ test:
     "{{ ppt_python }}" "{{ ppt_skill }}/scripts/attribution_guard.py" >/dev/null 2>&1 \
         && pass "attribution guard (skill unmodified)" \
         || fail "attribution guard — skill must stay unmodified (reinstall: just install-ppt-master)"
+    echo ""
+    echo "=== Composio CLI ==="
+    [ -f "{{ composio_skill }}/SKILL.md" ] \
+        && pass "composio-cli skill resolves" \
+        || fail "composio-cli skill missing (run: just install-composio)"
 
     echo ""
     echo "=== Commands ==="
