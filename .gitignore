@@ -35,6 +35,9 @@ harness/skills/brag/
 harness/skills/brag-slim/
 harness/skills/.staging-brag/
 
+# Composio CLI skill, symlinked from ~/.agents (just install-composio)
+harness/skills/composio-cli
+
 # Node
 node_modules/
 
