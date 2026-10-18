@@ -56,11 +56,12 @@ Check with `just check-env`.
 ## What's Included
 
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
-- **7 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`
+- **8 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`
 - **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
 - **4 rules**: python-style, typescript-style, pr-size-limit, omp-tips
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
+- **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements mnemopi: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts.
 - **MCPs**: Context7, Tavily
 - **OCR code review (manual-only)**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` or plain "review this" language runs it on explicit request; no hooks/automation by design
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).

@@ -274,7 +274,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""
