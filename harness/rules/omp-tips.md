@@ -49,6 +49,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:extension-creator` | wants to build a custom OMP extension |
 | `/skill:skill-creator` | wants to create a new OMP skill |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
+| `/skill:agents-vault` | wants OMP to read or write project notes, handoffs, or decision records in the shared Obsidian vault (`~/Documents/hive`) |
 | `/skill:impeccable` | wants frontend/UI design work: shaping, critique, polish, audit, bolder/quieter, animation, or a design-system pass |
 | `/skill:ppt-master` | wants a slide deck, presentation, or PPTX generated from a topic or document, or an existing deck beautified, restyled, filled, animated, or narrated |
 | `/skill:brag` | wants a short, shareable launch video for a project or live site URL — music, motion, share copy (installed via `just install-brag`) |
