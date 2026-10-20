@@ -15,8 +15,8 @@ composio_skill  := harness_dir / "skills" / "composio-cli"
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, and the Composio CLI
-install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag install-composio
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, and the herdr OMP integration
+install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag install-composio install-herdr
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -162,6 +162,32 @@ install-composio:
     echo "  Skill:  {{ composio_skill }} -> {{ composio_agents }}"
     echo "  Login:  run 'composio login' to authenticate (not run here — it prints a URL)"
 
+# Install the herdr OMP integration: an OMP extension (~/.omp/agent/extensions/
+# herdr-omp-agent-state.ts, gitignored) that reports OMP lifecycle state to herdr,
+# making idle/working/blocked/done accurate for OMP panes in herdr tabs. Required by
+# the herdr-orchestrator skill, which also self-heals this at runtime. Skips
+# gracefully when herdr itself is not installed (get it at https://herdr.dev).
+install-herdr:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v herdr >/dev/null 2>&1; then
+        echo "herdr not installed — skipping (see https://herdr.dev, then rerun)"
+        exit 0
+    fi
+    echo "$(herdr --version 2>/dev/null || echo herdr unknown)"
+    omp_line=$(herdr integration status 2>/dev/null | grep '^omp:' || true)
+    case "$omp_line" in
+        *"not installed"*)
+            # Optional machine integration: warn, don't fail the install chain.
+            if herdr integration install omp; then
+                echo "  OMP integration: installed"
+            else
+                echo "  OMP integration: install failed — is the herdr server running? Retry inside a herdr session." >&2
+            fi
+            ;;
+        *) echo "  OMP integration: $omp_line" ;;
+    esac
+
 # Full setup: install everything and symlink harness
 setup: install link
 
@@ -252,6 +278,17 @@ status:
     else
         echo "  Not installed (run: just install-composio)"
     fi
+    echo ""
+    echo "=== herdr (tab orchestration) ==="
+    if command -v herdr >/dev/null 2>&1; then
+        echo "  Version: $(herdr --version 2>/dev/null | head -1)"
+        herdr integration status 2>/dev/null | grep '^omp:' | sed 's/^/  Integration: /' || echo "  Integration: unknown"
+        [ -f ~/.omp/agent/skills/herdr-orchestrator/SKILL.md ] \
+            && echo "  Skill: herdr-orchestrator installed" \
+            || echo "  Skill: herdr-orchestrator missing (harness/skills/)"
+    else
+        echo "  Not installed (optional — https://herdr.dev)"
+    fi
 
 # Verify harness structure and OMP config
 test:
@@ -274,7 +311,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault herdr-orchestrator; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""
