@@ -38,6 +38,9 @@ harness/skills/.staging-brag/
 # Composio CLI skill, symlinked from ~/.agents (just install-composio)
 harness/skills/composio-cli
 
+# herdr OMP integration payload (just install-herdr / herdr integration install omp)
+harness/extensions/
+
 # Node
 node_modules/
 
