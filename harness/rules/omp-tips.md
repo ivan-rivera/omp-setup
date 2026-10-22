@@ -37,6 +37,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 |---------|---------------------|
 | `/intro` | wants an orientation to OMP and this harness |
 | `/onboard` | wants to set up OMP for a new repository |
+| `/briefing` | wants an explainer of a pull request — theirs or someone else's: ELI5, key changes, gotchas |
 | `/update` | wants to check for OMP updates (only in the omp-setup repo) |
 | `/intercom` or `Alt+M` | wants to send a message or question to another live OMP session |
 
@@ -49,6 +50,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:frontend-design` | is making visual design decisions for UI |
 | `/skill:extension-creator` | wants to build a custom OMP extension |
 | `/skill:skill-creator` | wants to create a new OMP skill |
+| `/skill:pr-briefing` | wants a PR briefed/explained in plain language, with key changes, implications, and gotchas; also fires automatically when a PR is released |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
 | `/skill:agents-vault` | wants OMP to read or write project notes, handoffs, or decision records in the shared Obsidian vault (`~/Documents/hive`) |
 | `/skill:orchestrate` | wants to run a goal as a coordinated agent fleet — a herdr goal session with milestone workspaces, coordinator + worker tabs, a shared ledger, and convergent verification |

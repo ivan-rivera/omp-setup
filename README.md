@@ -59,8 +59,8 @@ Check with `just check-env`.
 ## What's Included
 
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
-- **8 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`; `orchestrate` for running a goal as a coordinated agent fleet
-- **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
+- **10 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, orchestrate, pr-briefing, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`
+- **3 commands**: `/intro` (harness orientation), `/onboard` (repo setup), `/briefing` (PR explainer)
 - **5 rules**: python-style, typescript-style, pr-size-limit, omp-tips, intercom
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
@@ -68,6 +68,7 @@ Check with `just check-env`.
 - **Goal orchestration**: /skill:orchestrate — runs a goal as a coordinated agent fleet: a dedicated herdr session per goal (headless server + attached Warp tab), milestone workspaces with coordinator and worker tabs, a shared .orchestrate/ ledger with typed escalations and idempotent resume, per-worker git worktrees, bounded convergence with oracle escalation, independent verification, a zero-cost health patrol, and a completion cost report via the AgentsView archive.
 - **MCPs**: Context7, Tavily, AgentsView (read-only search over the session archive — see below)
 - **OCR code review (manual-only)**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` or plain "review this" language runs it on explicit request; no hooks/automation by design
+- **PR briefings**: `/skill:pr-briefing` — an explainer (not a review) for any PR, yours or anyone's: ELI5, key changes with practical implications, gotchas, and code anchors via OMP's `pr://` reads. Runs automatically as the closing step when you ask OMP to open or release a PR; `/briefing <pr>` or natural language calls it on demand. For critique, use `/skill:ocr-review` instead.
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
 - **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 - **Launch videos**: `/skill:brag` (full, Hyperframes-rendered) and `/skill:brag-slim` (local tools) — **not vendored**; fetched from [latent-spaces/brag](https://github.com/latent-spaces/brag) via `just install-brag` (included in `just install`). Update = rerun the same target; optionally pin a ref: `just install-brag v0.4.0`
