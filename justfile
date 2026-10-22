@@ -350,7 +350,7 @@ test:
 
     echo ""
     echo "=== Rules ==="
-    for r in python-style typescript-style pr-size-limit omp-tips; do
+    for r in python-style typescript-style pr-size-limit omp-tips incidental-finds; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
 
