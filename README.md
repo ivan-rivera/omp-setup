@@ -61,7 +61,7 @@ Check with `just check-env`.
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
 - **8 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`; `orchestrate` for running a goal as a coordinated agent fleet
 - **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
-- **5 rules**: python-style, typescript-style, pr-size-limit, omp-tips, intercom
+- **6 rules**: python-style, typescript-style, pr-size-limit, omp-tips, intercom, incidental-finds (surface unrelated bugs/improvements noticed in passing — report-only, no hunting)
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
 - **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements mnemopi: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts.
