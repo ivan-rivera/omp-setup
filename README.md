@@ -40,9 +40,9 @@ Check with `just check-env`.
 | Target | Purpose |
 |--------|---------|
 | `just setup` | Full install + symlink |
-| `just install` | Install deps, OMP, plugins, OCR, PPT Master, brag skills |
+| `just install` | Install deps, OMP, all plugins and integrations (impeccable, intercom, OCR, PPT Master, brag, Composio, herdr) |
 | `just install-plugins` | Register the impeccable marketplace, install the design skill plugin |
-| `just update-impeccable` | Pull the latest impeccable skill version from upstream |
+| `just install-intercom` | Install the pi-intercom plugin — cross-session messaging between live OMP sessions |
 | `just install-ocr` | Install/update the `ocr` CLI, pin its OpenRouter config |
 | `just install-ppt-master` | Install/update the PPT Master slide-generation skill (vendor clone, uv venv, Python deps) |
 | `just install-brag` | Install/update the brag + brag-slim launch-video skills from [latent-spaces/brag](https://github.com/latent-spaces/brag) into gitignored `harness/skills/` |
@@ -58,7 +58,7 @@ Check with `just check-env`.
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
 - **8 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`
 - **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
-- **4 rules**: python-style, typescript-style, pr-size-limit, omp-tips
+- **5 rules**: python-style, typescript-style, pr-size-limit, omp-tips, intercom
 - **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
 - **Memory**: mnemopi (local SQLite)
 - **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements mnemopi: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts.
@@ -67,6 +67,7 @@ Check with `just check-env`.
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
 - **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 - **Launch videos**: `/skill:brag` (full, Hyperframes-rendered) and `/skill:brag-slim` (local tools) — **not vendored**; fetched from [latent-spaces/brag](https://github.com/latent-spaces/brag) via `just install-brag` (included in `just install`). Update = rerun the same target; optionally pin a ref: `just install-brag v0.4.0`
+- **Intercom (cross-session messaging)**: [pi-intercom](https://www.npmjs.com/package/pi-intercom) plugin (npm, MIT) — direct messaging between live OMP sessions on this machine. `/alias <slug>` names a session; the `intercom` tool does `list` / `send` / `ask` / `reply` / `handover` (`ask` blocks up to 10 min for the reply); `Alt+M` or `/intercom` opens the human overlay. A local broker auto-spawns (state in `~/.pi/agent/intercom/`, exits when idle). Usage policy: `rules/intercom.md`. Installed via `just install-intercom`.
 
 ## PPT Master (slide generation)
 
