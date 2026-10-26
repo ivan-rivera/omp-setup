@@ -15,8 +15,8 @@ composio_skill  := harness_dir / "skills" / "composio-cli"
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, and the herdr OMP integration
-install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag install-composio install-herdr
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, the herdr OMP integration, and the intercom cross-session messaging plugin
+install: install-deps install-omp install-plugins install-intercom install-ocr install-ppt-master install-brag install-composio install-herdr
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -57,6 +57,15 @@ update-impeccable:
     set -euo pipefail
     omp plugin marketplace update impeccable
     omp plugin upgrade impeccable@impeccable
+
+# Install the pi-intercom plugin (npm): direct messaging between live OMP
+# sessions on this machine (/alias + the intercom tool). Policy: harness/rules/intercom.md
+install-intercom:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    grep -q '"pi-intercom"' "$HOME/.omp/plugins/omp-plugins.lock.json" 2>/dev/null \
+        || omp install npm:pi-intercom
+    echo "  pi-intercom plugin: $(omp plugin list 2>/dev/null | grep -o 'pi-intercom@[^ ]*' || echo 'missing')"
 
 # Install/update the OCR (open-code-review) CLI and pin its OpenRouter config.
 # Rerunning this target updates the CLI to the latest published version.
@@ -350,7 +359,7 @@ test:
 
     echo ""
     echo "=== Rules ==="
-    for r in python-style typescript-style pr-size-limit omp-tips; do
+    for r in python-style typescript-style pr-size-limit omp-tips intercom; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
 

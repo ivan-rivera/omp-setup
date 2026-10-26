@@ -38,6 +38,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/intro` | wants an orientation to OMP and this harness |
 | `/onboard` | wants to set up OMP for a new repository |
 | `/update` | wants to check for OMP updates (only in the omp-setup repo) |
+| `/intercom` or `Alt+M` | wants to send a message or question to another live OMP session |
 
 **Custom skills (this harness):**
 
