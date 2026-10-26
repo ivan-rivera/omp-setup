@@ -1,5 +1,6 @@
 omp_agent_dir := env("HOME") / ".omp" / "agent"
 harness_dir   := justfile_directory() / "harness"
+readme        := justfile_directory() / "README.md"
 backup_suffix := `date +%Y-%m-%d`
 ocr_model     := env_var_or_default("OCR_MODEL", "z-ai/glm-5.3")
 ppt_repo    := "https://github.com/hugohe3/ppt-master.git"
@@ -378,6 +379,15 @@ test:
     grep -q "openrouter" ~/.omp/agent/models.yml && pass "OpenRouter provider" || fail "OpenRouter missing"
     grep -q "context7" ~/.omp/agent/mcp.json && pass "Context7 MCP" || fail "Context7 missing"
     grep -q "tavily" ~/.omp/agent/mcp.json && pass "Tavily MCP" || fail "Tavily missing"
+
+    echo ""
+    echo "=== README Sync ==="
+    # README.md is the capability inventory: every agent, skill, command, rule,
+    # fetched skill, and MCP must appear in it (see .omp/rules/harness-dev.md).
+    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault herdr-orchestrator ppt-master brag brag-slim composio-cli intro onboard python-style typescript-style pr-size-limit omp-tips context7 tavily"
+    for name in $readme_names; do
+        grep -qwi "$name" "{{ readme }}" && pass "README mentions $name" || fail "README.md missing '$name' (see .omp/rules/harness-dev.md)"
+    done
 
     echo ""
     $ok && echo "All checks passed." || { echo "Some checks failed."; exit 1; }

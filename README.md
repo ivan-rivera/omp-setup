@@ -20,7 +20,7 @@ cd omp-setup
 just setup
 ```
 
-This installs dependencies, OMP, and the OCR code-review CLI, and symlinks `harness/` to `~/.omp/agent/`.
+Runs the full install (deps, OMP, plugins, OCR, PPT Master, brag + Composio skills, herdr integration) and symlinks `harness/` to `~/.omp/agent/`.
 
 OCR is pinned to the OpenRouter provider (`z-ai/glm-5.3` by default — override per machine with the `OCR_MODEL` env var) and reads its key from `OPENROUTER_API_KEY`; no secret is stored in `~/.opencodereview/config.json`.
 
@@ -40,12 +40,14 @@ Check with `just check-env`.
 | Target | Purpose |
 |--------|---------|
 | `just setup` | Full install + symlink |
-| `just install` | Install deps, OMP, plugins, OCR, PPT Master, brag skills |
+| `just install` | Install deps, OMP, plugins, OCR, PPT Master, brag skills, Composio CLI, herdr integration |
 | `just install-plugins` | Register the impeccable marketplace, install the design skill plugin |
 | `just update-impeccable` | Pull the latest impeccable skill version from upstream |
 | `just install-ocr` | Install/update the `ocr` CLI, pin its OpenRouter config |
 | `just install-ppt-master` | Install/update the PPT Master slide-generation skill (vendor clone, uv venv, Python deps) |
 | `just install-brag` | Install/update the brag + brag-slim launch-video skills from [latent-spaces/brag](https://github.com/latent-spaces/brag) into gitignored `harness/skills/` |
+| `just install-composio` | Install/update the Composio CLI; materialize the `composio-cli` skill into gitignored `harness/skills/` |
+| `just install-herdr` | Install the herdr OMP integration (state-reporting extension for OMP panes in herdr tabs); no-op when herdr isn't installed |
 | `just link` | Symlink harness to ~/.omp/agent/ |
 | `just unlink` | Remove symlink, optionally restore backup |
 | `just status` | Show symlink, OMP version, env vars |
@@ -56,10 +58,10 @@ Check with `just check-env`.
 ## What's Included
 
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
-- **8 skills** (+ 2 optional launch-video skills fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`
+- **9 skills** (+3 fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, herdr-orchestrator, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`, composio-cli via `just install-composio`
 - **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
 - **4 rules**: python-style, typescript-style, pr-size-limit, omp-tips
-- **Model routing**: 5 domains x 4 tiers via OpenRouter, Ollama placeholder
+- **Model routing**: 4 roles (default / code / agentic / oracle) via OpenRouter, Ollama placeholder; oracle reserved for user-approved consults (`/advisor on`, Ctrl+P)
 - **Memory**: mnemopi (local SQLite)
 - **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements mnemopi: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts.
 - **MCPs**: Context7, Tavily
@@ -67,6 +69,8 @@ Check with `just check-env`.
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
 - **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 - **Launch videos**: `/skill:brag` (full, Hyperframes-rendered) and `/skill:brag-slim` (local tools) — **not vendored**; fetched from [latent-spaces/brag](https://github.com/latent-spaces/brag) via `just install-brag` (included in `just install`). Update = rerun the same target; optionally pin a ref: `just install-brag v0.4.0`
+- **Composio CLI**: `/skill:composio-cli` — operate the published Composio CLI from OMP sessions (find tools, connect accounts, run actions). Installed by `just install-composio`; authenticate with `composio login`.
+- **herdr integration**: `just install-herdr` installs a gitignored OMP extension that reports OMP lifecycle state (idle/working/blocked/done) for OMP panes in herdr tabs. Prerequisite for `/skill:herdr-orchestrator` (overseer-pattern orchestration across herdr tabs), which self-heals it at runtime.
 
 ## PPT Master (slide generation)
 

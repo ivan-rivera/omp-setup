@@ -1,6 +1,6 @@
 ---
 description: "OMP harness config editing conventions"
-globs: ["harness/**"]
+globs: ["harness/**", "justfile"]
 alwaysApply: false
 ---
 
@@ -16,4 +16,14 @@ This repository contains OMP configuration files. When editing files under `harn
 - **models.yml**: Provider definitions. Valid `api` values: `openai-completions`, `openai-responses`, `anthropic-messages`, `google-generative-ai`.
 - **mcp.json**: MCP server definitions. Valid `type` values: `stdio`, `http`, `sse`.
 
-When adding new agents, skills, or commands, also update `harness/rules/omp-tips.md` with a reference entry.
+## Documentation Sync
+
+`README.md` is the live inventory of harness capabilities; `harness/models-changelog.md` and friends record history. A changelog entry is never a substitute: a capability missing from the README is invisible to every future session.
+
+When a change adds, removes, or renames a capability — agent, skill, command, rule, hook, MCP server, model role or routing, provider, env var, prerequisite, or install/update justfile target — update `README.md` in the same PR:
+
+- **What's Included**: counts and lists must match `harness/` exactly (`just test` enforces this).
+- **Prerequisites / Environment Variables / Justfile Targets**: add, edit, or remove rows to match reality.
+- Delete entries for removed capabilities — the README describes current state, not history.
+
+When adding or changing agents, skills, or commands, also update `harness/rules/omp-tips.md` with a reference entry.
