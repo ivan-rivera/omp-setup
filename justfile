@@ -196,7 +196,7 @@ install-agentsview:
 # Install the herdr OMP integration: an OMP extension (~/.omp/agent/extensions/
 # herdr-omp-agent-state.ts, gitignored) that reports OMP lifecycle state to herdr,
 # making idle/working/blocked/done accurate for OMP panes in herdr tabs. Required by
-# the herdr-orchestrator skill, which also self-heals this at runtime. Skips
+# the orchestrate skill, which also self-heals this at runtime. Skips
 # gracefully when herdr itself is not installed (get it at https://herdr.dev).
 install-herdr:
     #!/usr/bin/env bash
@@ -314,9 +314,9 @@ status:
     if command -v herdr >/dev/null 2>&1; then
         echo "  Version: $(herdr --version 2>/dev/null | head -1)"
         herdr integration status 2>/dev/null | grep '^omp:' | sed 's/^/  Integration: /' || echo "  Integration: unknown"
-        [ -f ~/.omp/agent/skills/herdr-orchestrator/SKILL.md ] \
-            && echo "  Skill: herdr-orchestrator installed" \
-            || echo "  Skill: herdr-orchestrator missing (harness/skills/)"
+        [ -f ~/.omp/agent/skills/orchestrate/SKILL.md ] \
+            && echo "  Skill: orchestrate installed" \
+            || echo "  Skill: orchestrate missing (harness/skills/)"
     else
         echo "  Not installed (optional — https://herdr.dev)"
     fi
@@ -342,7 +342,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault herdr-orchestrator; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orchestrate; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""

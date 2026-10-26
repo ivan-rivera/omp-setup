@@ -17,7 +17,7 @@ The `intercom` tool (pi-intercom plugin) passes messages between separate, live 
 - The peer is a subagent of this session — use `task` / `write agent://<id>`.
 - The note must outlive the session or be pulled on demand — write to the agents vault (`/skill:agents-vault`); intercom is live coordination, not a durable record.
 - You can proceed independently — don't interrupt another session for trivia.
-- Spawning or monitoring worker tabs — herdr owns lifecycle (`/skill:herdr-orchestrator`); intercom owns the messages between live sessions (and can open a herdr pane via `openProjectPaneIfMissing`).
+- Spawning or monitoring worker tabs — herdr owns lifecycle (`/skill:orchestrate`); intercom owns the messages between live sessions (and can open a herdr pane via `openProjectPaneIfMissing`).
 
 ## Discipline
 
