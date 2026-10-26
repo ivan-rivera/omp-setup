@@ -15,8 +15,8 @@ composio_skill  := harness_dir / "skills" / "composio-cli"
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, the herdr OMP integration, and the intercom cross-session messaging plugin
-install: install-deps install-omp install-plugins install-intercom install-ocr install-ppt-master install-brag install-composio install-herdr
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, the AgentsView session archive, the herdr OMP integration, and the intercom cross-session messaging plugin
+install: install-deps install-omp install-plugins install-intercom install-ocr install-ppt-master install-brag install-composio install-agentsview install-herdr
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -170,6 +170,28 @@ install-composio:
     ln -sfn "{{ composio_agents }}" "{{ composio_skill }}"
     echo "  Skill:  {{ composio_skill }} -> {{ composio_agents }}"
     echo "  Login:  run 'composio login' to authenticate (not run here — it prints a URL)"
+
+# Install/update the AgentsView session archive (https://agentsview.io).
+# curl-installs the standalone CLI (into /usr/local/bin, or ~/.local/bin when
+# that is not writable) and indexes every discovered agent's sessions into a
+# local SQLite archive (~/.agentsview/) — OMP (~/.omp/agent/sessions/) and
+# Hermes (~/.hermes/sessions/ + sibling state.db) are auto-discovered, alongside
+# any other supported agent on the machine. The read-only 'agentsview mcp'
+# server is pre-wired in harness/mcp.json so OMP can search its own history.
+install-agentsview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Installing/updating AgentsView..."
+    curl -fsSL https://agentsview.io/install.sh | bash
+    # The installer prefers /usr/local/bin and falls back to ~/.local/bin.
+    bin=$(command -v agentsview || true)
+    [ -n "$bin" ] || bin=$([ -x "$HOME/.local/bin/agentsview" ] && echo "$HOME/.local/bin/agentsview" || true)
+    [ -n "$bin" ] || { echo "Installer did not produce an agentsview binary — aborting." >&2; exit 1; }
+    echo "  Installed: $("$bin" --version 2>/dev/null | head -1 || echo unknown) at $bin"
+    echo "  Indexing discovered sessions (auto-starts the archive daemon; first run can take a while)..."
+    "$bin" sync
+    echo "  Web UI: agentsview serve  →  http://127.0.0.1:8080"
+    echo "  OMP: the agentsview MCP server (harness/mcp.json) searches this archive in new sessions"
 
 # Install the herdr OMP integration: an OMP extension (~/.omp/agent/extensions/
 # herdr-omp-agent-state.ts, gitignored) that reports OMP lifecycle state to herdr,
