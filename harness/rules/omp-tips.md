@@ -38,6 +38,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/intro` | wants an orientation to OMP and this harness |
 | `/onboard` | wants to set up OMP for a new repository |
 | `/briefing` | wants an explainer of a pull request — theirs or someone else's: ELI5, key changes, gotchas |
+| `/merge-prs` | wants all open PRs reviewed, merged sequentially with conflicts resolved, and the harness updated after |
 | `/update` | wants to check for OMP updates (only in the omp-setup repo) |
 | `/intercom` or `Alt+M` | wants to send a message or question to another live OMP session |
 
