@@ -403,7 +403,7 @@ test:
 
     echo ""
     echo "=== Rules ==="
-    for r in python-style typescript-style pr-size-limit omp-tips intercom; do
+    for r in python-style typescript-style pr-size-limit omp-tips intercom incidental-finds; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
 
