@@ -117,6 +117,7 @@ reports/         worker reports, verifier verdicts, final report.md
 
 - Append `.orchestrate/` to the project's `.gitignore` if missing.
 - Workers live in worktrees → share the ledger by **absolute path**; state the absolute ledger path in every brief (e.g. `/abs/path/to/<repo>/.orchestrate/<goal-slug>/`). A relative path resolves differently inside each worktree — it will silently point at nothing.
+- Memory backends with per-project scoping tag memories by session cwd: fleet sessions in ephemeral worktrees write memories under worktree-path tags that nothing will ever recall once the worktree is pruned — write-only noise, not a coordination channel. Never rely on agent memory for fleet state; the ledger is the durable record.
 - `briefs/` holds the exact dispatched text; resume compares `brief_sha` to detect a re-dispatch with changed content.
 - `reports/` is write-per-worker: each worker writes only `reports/<task-id>.md`; the lead writes verifier verdicts; the ctl writes `report.md`.
 - Status vocab — goal/milestone: `planning|active|blocked|done|failed|archived`; task: `pending|dispatched|in_progress|verifying|done|failed|oracle|needs_human`.
