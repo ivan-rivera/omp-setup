@@ -364,7 +364,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orchestrate; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orchestrate pr-briefing; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""
@@ -397,7 +397,7 @@ test:
 
     echo ""
     echo "=== Commands ==="
-    for c in intro onboard; do
+    for c in intro onboard briefing; do
         [ -f ~/.omp/agent/commands/$c.md ] && pass "$c" || fail "$c missing"
     done
 
