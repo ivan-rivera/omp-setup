@@ -20,7 +20,7 @@ cd omp-setup
 just setup
 ```
 
-Runs the full install (deps, OMP, plugins, OCR, PPT Master, brag + Composio skills, herdr integration) and symlinks `harness/` to `~/.omp/agent/`.
+Runs the full install chain (deps, OMP, impeccable plugin, intercom, OCR, PPT Master, brag + Composio skills, AgentsView archive, herdr integration) and symlinks `harness/` to `~/.omp/agent/`. Start the shared Hindsight memory server separately with `just hindsight-up`.
 
 OCR is pinned to the OpenRouter provider (`z-ai/glm-5.3` by default — override per machine with the `OCR_MODEL` env var) and reads its key from `OPENROUTER_API_KEY`; no secret is stored in `~/.opencodereview/config.json`.
 
@@ -40,14 +40,17 @@ Check with `just check-env`.
 | Target | Purpose |
 |--------|---------|
 | `just setup` | Full install + symlink |
-| `just install` | Install deps, OMP, plugins, OCR, PPT Master, brag skills, Composio CLI, herdr integration |
+| `just install` | Install deps, OMP, all plugins and integrations (impeccable, intercom, OCR, PPT Master, brag, Composio, AgentsView, herdr) |
 | `just install-plugins` | Register the impeccable marketplace, install the design skill plugin |
-| `just update-impeccable` | Pull the latest impeccable skill version from upstream |
+| `just install-intercom` | Install the pi-intercom plugin — cross-session messaging between live OMP sessions |
 | `just install-ocr` | Install/update the `ocr` CLI, pin its OpenRouter config |
 | `just install-ppt-master` | Install/update the PPT Master slide-generation skill (vendor clone, uv venv, Python deps) |
 | `just install-brag` | Install/update the brag + brag-slim launch-video skills from [latent-spaces/brag](https://github.com/latent-spaces/brag) into gitignored `harness/skills/` |
-| `just install-composio` | Install/update the Composio CLI; materialize the `composio-cli` skill into gitignored `harness/skills/` |
-| `just install-herdr` | Install the herdr OMP integration (state-reporting extension for OMP panes in herdr tabs); no-op when herdr isn't installed |
+| `just install-composio` | Install/update the Composio CLI and materialize the composio-cli skill (login left to the user) |
+| `just install-agentsview` | Install/update the [AgentsView](https://agentsview.io) session-archive CLI and index discovered sessions |
+| `just install-herdr` | Install the herdr OMP integration (reports lifecycle state to herdr tabs; skips when herdr is absent) |
+| `just hindsight-up` | Start the shared Hindsight memory server (Docker container, bank `ivr`; needs `OPENROUTER_API_KEY`) |
+| `just hindsight-down` | Stop the Hindsight memory server |
 | `just link` | Symlink harness to ~/.omp/agent/ |
 | `just unlink` | Remove symlink, optionally restore backup |
 | `just status` | Show symlink, OMP version, env vars |
@@ -58,19 +61,22 @@ Check with `just check-env`.
 ## What's Included
 
 - **10 agents**: frontend, backend, architect, security, qa, legal, finance, researcher, content-writer, data-generator
-- **9 skills** (+3 fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, herdr-orchestrator, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`, composio-cli via `just install-composio`
-- **2 commands**: `/intro` (harness orientation), `/onboard` (repo setup)
-- **4 rules**: python-style, typescript-style, pr-size-limit, omp-tips
+- **10 skills** (+3 fetched from upstream): brainstorming, frontend-design, model-scout, skill-creator, extension-creator, ocr-review, agents-vault, orchestrate, pr-briefing, ppt-master (upstream [PPT Master](https://github.com/hugohe3/ppt-master), vendored); brag + brag-slim via `just install-brag`, composio-cli via `just install-composio`
+- **3 commands**: `/intro` (harness orientation), `/onboard` (repo setup), `/briefing` (PR explainer)
+- **6 rules**: python-style, typescript-style, pr-size-limit, omp-tips, intercom, incidental-finds (surface unrelated bugs/improvements noticed in passing — report-only, no hunting)
 - **Model routing**: 4 roles (default / code / agentic / oracle) via OpenRouter, Ollama placeholder; oracle reserved for user-approved consults (`/advisor on`, Ctrl+P)
-- **Memory**: mnemopi (local SQLite)
-- **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements mnemopi: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts.
-- **MCPs**: Context7, Tavily
+- **Memory**: Hindsight ([vectorize-io/hindsight](https://github.com/vectorize-io/hindsight), Docker container on `localhost:8888`) — one shared bank `ivr` for OMP, Hermes, and the vault. LLM extraction/consolidation runs on OpenRouter `z-ai/glm-5.3-flash` (`just hindsight-up`, needs `OPENROUTER_API_KEY`): seconds per operation, zero local inference heat. Tradeoff: retained transcripts leave the machine (a fully-local 7B was tried and rejected — consolidation ran the laptop hot). OMP auto-recalls on the first turn and auto-retains every 3 user turns in last-turn mode (small prompts; revert to `full-session` in `config.yml` for max recall). `memory_edit` is unavailable, so memory management goes through the Hindsight MCP server.
+- **Agents vault**: `/skill:agents-vault` — the shared Obsidian vault (`~/Documents/hive`) as pull-based project memory. OMP reads/writes only `Agents/OMP/` (handoff notes, project dossiers, decision records, subagent coordination, async messages); sibling `Agents/Hermes/` belongs to the Hermes agent. Complements Hindsight: the vault holds bulky project-scoped state consulted on demand, not auto-recalled facts. A one-way `hindsight-obsidian-sync` reconcile mirrors vault notes into the shared Hindsight bank (with `vault:`/`folder:` tags) for semantic recall — the markdown files stay the source of truth.
+- **Goal orchestration**: /skill:orchestrate — runs a goal as a coordinated agent fleet: a dedicated herdr session per goal (headless server + attached Warp tab), milestone workspaces with coordinator and worker tabs, a shared .orchestrate/ ledger with typed escalations and idempotent resume, per-worker git worktrees, bounded convergence with oracle escalation, independent verification, a zero-cost health patrol, mixed OMP + Hermes workers (`--kind hermes`) with any-agent origins, opt-in gateway notifications (`hermes send`), and a completion cost report via the AgentsView archive.
+- **MCPs**: Context7, Tavily, Hindsight (memory management + vault recall, single-bank endpoint on the shared `ivr` bank), AgentsView (read-only search over the session archive — see below)
 - **OCR code review (manual-only)**: `ocr` CLI (npm, OpenRouter-backed) — `/skill:ocr-review` or plain "review this" language runs it on explicit request; no hooks/automation by design
+- **PR briefings**: `/skill:pr-briefing` — an explainer (not a review) for any PR, yours or anyone's: ELI5, key changes with practical implications, gotchas, and code anchors via OMP's `pr://` reads. Runs automatically as the closing step when you ask OMP to open or release a PR; `/briefing <pr>` or natural language calls it on demand. For critique, use `/skill:ocr-review` instead.
 - **Impeccable design skill**: installed as an OMP marketplace plugin from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache-2.0, © Paul Bakaus) — no vendored copies in this repo. `/skill:impeccable <command> <target>` exposes its 24 design commands (`init`, `shape`, `critique`, `audit`, `polish`, `bolder`, `animate`, `live`, ...). Per-project state (`PRODUCT.md`, `DESIGN.md`, `.impeccable/`) lives in each app repo. Loaded via the `claude-plugins` provider (re-enabled in `config.yml`; Claude Code's own `~/.claude` registry stays opt-in-gated).
 - **Impeccable design detector hook**: `harness/hooks/post/impeccable-design.ts` — after every `edit`/`write` on a UI file inside an Impeccable project, runs the plugin's engine and injects findings as model context (per-edit pass; 5s budget). Disable per project with `hook.enabled: false` in `.impeccable/config.json`, or globally with `IMPECCABLE_HOOK_DISABLED`.
 - **Launch videos**: `/skill:brag` (full, Hyperframes-rendered) and `/skill:brag-slim` (local tools) — **not vendored**; fetched from [latent-spaces/brag](https://github.com/latent-spaces/brag) via `just install-brag` (included in `just install`). Update = rerun the same target; optionally pin a ref: `just install-brag v0.4.0`
 - **Composio CLI**: `/skill:composio-cli` — operate the published Composio CLI from OMP sessions (find tools, connect accounts, run actions). Installed by `just install-composio`; authenticate with `composio login`.
-- **herdr integration**: `just install-herdr` installs a gitignored OMP extension that reports OMP lifecycle state (idle/working/blocked/done) for OMP panes in herdr tabs. Prerequisite for `/skill:herdr-orchestrator` (overseer-pattern orchestration across herdr tabs), which self-heals it at runtime.
+- **herdr integration**: `just install-herdr` installs a gitignored OMP extension that reports OMP lifecycle state (idle/working/blocked/done) for OMP panes in herdr tabs. Prerequisite for the `orchestrate` skill (goal-oriented fleet orchestration across herdr tabs), which self-heals it at runtime.
+- **Intercom (cross-session messaging)**: [pi-intercom](https://www.npmjs.com/package/pi-intercom) plugin (npm, MIT) — direct messaging between live OMP sessions on this machine. `/alias <slug>` names a session; the `intercom` tool does `list` / `send` / `ask` / `reply` / `handover` (`ask` blocks up to 10 min for the reply); `Alt+M` or `/intercom` opens the human overlay. A local broker auto-spawns (state in `~/.pi/agent/intercom/`, exits when idle). Usage policy: `rules/intercom.md`. Installed via `just install-intercom`.
 
 ## PPT Master (slide generation)
 
@@ -90,6 +96,20 @@ installed by `just install-ppt-master` and excluded from git. The skill ships an
   `PIXABAY_API_KEY` improve web-search image quality.
 - **License**: the skill is MIT (Hugo He), vendored unmodified; the optional PyMuPDF dependency
   is AGPL-3.0 (PDF sources only — relevant only if you redistribute a bundle that includes it).
+
+## Session Archive (AgentsView)
+
+`just install-agentsview` installs the [AgentsView](https://agentsview.io) CLI and indexes every
+supported agent's sessions on this machine into a local SQLite archive (`~/.agentsview/`) —
+**OMP** (`~/.omp/agent/sessions/`) and **Hermes** (`~/.hermes/sessions/` + `state.db`) are both
+auto-discovered, so Hermes CLI/TUI/gateway sessions appear alongside OMP ones. Browse them with
+`agentsview serve` (web UI at `http://127.0.0.1:8080`); the archive daemon watches session
+directories and keeps everything local unless you explicitly opt into a sharing feature.
+
+OMP itself reads the archive through the read-only `agentsview` MCP server (`harness/mcp.json`):
+`search_sessions`, `list_sessions`, `get_session_overview`, `get_messages`, `search_content`, and
+`get_usage_summary` — "have I hit this error before?" questions resolve against recorded history
+from both agents. Update the CLI by rerunning the target (or `agentsview update`).
 
 ## Updating
 

@@ -16,8 +16,8 @@ composio_skill  := harness_dir / "skills" / "composio-cli"
 help:
     @just --list --unsorted
 
-# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, and the herdr OMP integration
-install: install-deps install-omp install-plugins install-ocr install-ppt-master install-brag install-composio install-herdr
+# Install all dependencies, OMP, plugins, the OCR CLI, PPT Master, the brag launch-video skills, the Composio CLI, the AgentsView session archive, the herdr OMP integration, and the intercom cross-session messaging plugin
+install: install-deps install-omp install-plugins install-intercom install-ocr install-ppt-master install-brag install-composio install-agentsview install-herdr
 
 # Install prerequisites (bun, node)
 install-deps:
@@ -58,6 +58,15 @@ update-impeccable:
     set -euo pipefail
     omp plugin marketplace update impeccable
     omp plugin upgrade impeccable@impeccable
+
+# Install the pi-intercom plugin (npm): direct messaging between live OMP
+# sessions on this machine (/alias + the intercom tool). Policy: harness/rules/intercom.md
+install-intercom:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    grep -q '"pi-intercom"' "$HOME/.omp/plugins/omp-plugins.lock.json" 2>/dev/null \
+        || omp install npm:pi-intercom
+    echo "  pi-intercom plugin: $(omp plugin list 2>/dev/null | grep -o 'pi-intercom@[^ ]*' || echo 'missing')"
 
 # Install/update the OCR (open-code-review) CLI and pin its OpenRouter config.
 # Rerunning this target updates the CLI to the latest published version.
@@ -163,10 +172,32 @@ install-composio:
     echo "  Skill:  {{ composio_skill }} -> {{ composio_agents }}"
     echo "  Login:  run 'composio login' to authenticate (not run here — it prints a URL)"
 
+# Install/update the AgentsView session archive (https://agentsview.io).
+# curl-installs the standalone CLI (into /usr/local/bin, or ~/.local/bin when
+# that is not writable) and indexes every discovered agent's sessions into a
+# local SQLite archive (~/.agentsview/) — OMP (~/.omp/agent/sessions/) and
+# Hermes (~/.hermes/sessions/ + sibling state.db) are auto-discovered, alongside
+# any other supported agent on the machine. The read-only 'agentsview mcp'
+# server is pre-wired in harness/mcp.json so OMP can search its own history.
+install-agentsview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Installing/updating AgentsView..."
+    curl -fsSL https://agentsview.io/install.sh | bash
+    # The installer prefers /usr/local/bin and falls back to ~/.local/bin.
+    bin=$(command -v agentsview || true)
+    [ -n "$bin" ] || bin=$([ -x "$HOME/.local/bin/agentsview" ] && echo "$HOME/.local/bin/agentsview" || true)
+    [ -n "$bin" ] || { echo "Installer did not produce an agentsview binary — aborting." >&2; exit 1; }
+    echo "  Installed: $("$bin" --version 2>/dev/null | head -1 || echo unknown) at $bin"
+    echo "  Indexing discovered sessions (auto-starts the archive daemon; first run can take a while)..."
+    "$bin" sync
+    echo "  Web UI: agentsview serve  →  http://127.0.0.1:8080"
+    echo "  OMP: the agentsview MCP server (harness/mcp.json) searches this archive in new sessions"
+
 # Install the herdr OMP integration: an OMP extension (~/.omp/agent/extensions/
 # herdr-omp-agent-state.ts, gitignored) that reports OMP lifecycle state to herdr,
 # making idle/working/blocked/done accurate for OMP panes in herdr tabs. Required by
-# the herdr-orchestrator skill, which also self-heals this at runtime. Skips
+# the orchestrate skill, which also self-heals this at runtime. Skips
 # gracefully when herdr itself is not installed (get it at https://herdr.dev).
 install-herdr:
     #!/usr/bin/env bash
@@ -188,6 +219,28 @@ install-herdr:
             ;;
         *) echo "  OMP integration: $omp_line" ;;
     esac
+
+# Start the shared Hindsight memory server (bank data persists in the hindsight-data
+# Docker volume). LLM = z-ai/glm-5.3-flash via OpenRouter — needs OPENROUTER_API_KEY
+# in your shell. A local 7B (qwen2.5:7b) was tried first: fully local, but its
+# consolidation calls exceeded the 120s default LLM timeout (retry-looped at full
+# CPU) and, timeout raised, still ran the laptop hot for hours. The flash model
+# does extraction/consolidation in seconds. HINDSIGHT_API_LLM_TIMEOUT=600 kept as
+# headroom; MAX_CONCURRENT=4 caps burst parallelism.
+hindsight-up:
+    docker start hindsight 2>/dev/null || docker run -d --name hindsight --restart unless-stopped \
+        -p 8888:8888 -p 9999:9999 \
+        -e HINDSIGHT_API_LLM_PROVIDER=openrouter \
+        -e HINDSIGHT_API_LLM_MODEL=z-ai/glm-5.3-flash \
+        -e HINDSIGHT_API_LLM_API_KEY="${OPENROUTER_API_KEY}" \
+        -e HINDSIGHT_API_LLM_TIMEOUT=600 \
+        -e HINDSIGHT_API_LLM_MAX_CONCURRENT=4 \
+        -v hindsight-data:/home/hindsight/.pg0 \
+        ghcr.io/vectorize-io/hindsight:latest
+
+# Stop the Hindsight memory server
+hindsight-down:
+    docker stop hindsight
 
 # Full setup: install everything and symlink harness
 setup: install link
@@ -284,9 +337,9 @@ status:
     if command -v herdr >/dev/null 2>&1; then
         echo "  Version: $(herdr --version 2>/dev/null | head -1)"
         herdr integration status 2>/dev/null | grep '^omp:' | sed 's/^/  Integration: /' || echo "  Integration: unknown"
-        [ -f ~/.omp/agent/skills/herdr-orchestrator/SKILL.md ] \
-            && echo "  Skill: herdr-orchestrator installed" \
-            || echo "  Skill: herdr-orchestrator missing (harness/skills/)"
+        [ -f ~/.omp/agent/skills/orchestrate/SKILL.md ] \
+            && echo "  Skill: orchestrate installed" \
+            || echo "  Skill: orchestrate missing (harness/skills/)"
     else
         echo "  Not installed (optional — https://herdr.dev)"
     fi
@@ -312,7 +365,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault herdr-orchestrator; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orchestrate pr-briefing; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""
@@ -345,13 +398,13 @@ test:
 
     echo ""
     echo "=== Commands ==="
-    for c in intro onboard; do
+    for c in intro onboard briefing; do
         [ -f ~/.omp/agent/commands/$c.md ] && pass "$c" || fail "$c missing"
     done
 
     echo ""
     echo "=== Rules ==="
-    for r in python-style typescript-style pr-size-limit omp-tips; do
+    for r in python-style typescript-style pr-size-limit omp-tips intercom incidental-finds; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
 
@@ -375,7 +428,9 @@ test:
     echo "=== OMP Config ==="
     grep -q "disabledProviders" ~/.omp/agent/config.yml && pass "disabledProviders" || fail "disabledProviders missing"
     grep -q "modelRoles" ~/.omp/agent/config.yml && pass "modelRoles" || fail "modelRoles missing"
-    grep -q "backend: mnemopi" ~/.omp/agent/config.yml && pass "memory = mnemopi" || fail "memory backend"
+    grep -q "backend: hindsight" ~/.omp/agent/config.yml && pass "memory = hindsight" || fail "memory backend"
+    grep -q "hindsight" ~/.omp/agent/mcp.json && pass "Hindsight MCP" || fail "Hindsight MCP missing"
+    docker ps | grep -q hindsight && pass "hindsight server container" || fail "hindsight server not running (docker start hindsight)"
     grep -q "openrouter" ~/.omp/agent/models.yml && pass "OpenRouter provider" || fail "OpenRouter missing"
     grep -q "context7" ~/.omp/agent/mcp.json && pass "Context7 MCP" || fail "Context7 missing"
     grep -q "tavily" ~/.omp/agent/mcp.json && pass "Tavily MCP" || fail "Tavily missing"
@@ -384,7 +439,7 @@ test:
     echo "=== README Sync ==="
     # README.md is the capability inventory: every agent, skill, command, rule,
     # fetched skill, and MCP must appear in it (see .omp/rules/harness-dev.md).
-    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault herdr-orchestrator ppt-master brag brag-slim composio-cli intro onboard python-style typescript-style pr-size-limit omp-tips context7 tavily"
+    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault orchestrate pr-briefing ppt-master brag brag-slim composio-cli intro onboard briefing python-style typescript-style pr-size-limit omp-tips intercom incidental-finds context7 tavily hindsight agentsview"
     for name in $readme_names; do
         grep -qwi "$name" "{{ readme }}" && pass "README mentions $name" || fail "README.md missing '$name' (see .omp/rules/harness-dev.md)"
     done
