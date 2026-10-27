@@ -127,7 +127,7 @@ reports/         worker reports, verifier verdicts, final report.md
 
 ## Origin: bootstrap
 
-The origin agent bootstraps once and hands off — it does not babysit. You are building the skeleton (session, controller, patrol) and transferring ownership to `ctl`.
+The origin agent bootstraps once and hands off — it does not babysit. You are building the skeleton (session, controller, patrol) and transferring ownership to `ctl`. The origin role is **agent-agnostic**: it needs only a shell, file tools, and the herdr CLI — any capable agent can execute this section (e.g., Hermes: point it at this file's absolute path; `skill://orchestrate` only resolves inside OMP). The `ctl` and leads it spawns are OMP.
 
 1. Derive the goal slug from the charter title; init the ledger: `goal.md`, `ledger.json`, `events.jsonl` with a `goal.created` event.
 2. Ensure `.orchestrate/` is gitignored.
@@ -184,14 +184,14 @@ You own the ledger and the milestone fan-out. Loop, never busy-waiting:
 3. **Create milestone workspaces + leads** using the same command patterns as bootstrap: `workspace create --label "[mN] <title>" --no-focus`, `agent start mN-lead --kind omp --pane <pane-id>`, alias `<goal>-mN-lead` via `pane run`. Log `milestone.created`.
 4. **Dispatch lead briefs** (`agent prompt mN-lead "<brief>" --wait --timeout 900000`–`1800000` for code work); save each to `briefs/`. Briefs must be self-contained: milestone charter, decomposition hints, acceptance criteria, ledger absolute path, naming conventions.
 5. **Monitor on a cadence** between your own work: `intercom pending`, `heartbeats.jsonl`, `herdr --session <goal> agent list`. Never busy-wait. Run long waits in bounded chunks — `agent wait <name> --timeout 240000`, re-check, repeat — because tool-shell jobs get reaped around the five-minute mark; a reaped wait is harmless (the prompt was already delivered) as long as the server was launched detached: inspect with `agent get`/`agent read`, never blindly resubmit. A blocked agent rejects input (`agent_blocked`) — read the pane, surface the dialog to the user, never blind-approve.
-6. **Handle escalations** (types in Escalations): `block` — resolve external dependencies and cross-milestone conflicts yourself; `question` — decide and answer; `needs-human` — surface in chat AND the ctl tab (the user is human-in-the-loop there; they type into your tab). Resolve and log `escalation.resolved`.
+6. **Handle escalations** (types in Escalations): `block` — resolve external dependencies and cross-milestone conflicts yourself; `question` — decide and answer; `needs-human` — surface in chat AND the ctl tab (the user is human-in-the-loop there; they type into your tab), and if the formula's `notify_target` is set, deliver it out-of-band via the gateway (`hermes send`, see Notifications in reference.md). Resolve and log `escalation.resolved`.
 7. **Staleness protocol** (from patrol heartbeats): nudge the worker via intercom `send` (log `worker.nudged`) → re-dispatch the brief → escalate.
-8. **Completion**: integrate milestone branches into the target branch; write the cost report (Cost reporting); archive (Completion and archive); user-confirmed teardown — prune merged worktrees (`git worktree remove`), close goal-created workspaces, remove the Warp tab config, then `herdr --session <goal> session stop <goal>` and `herdr session delete <goal>` as the **FINAL** action. This is the one sanctioned exception to never stopping a server: it is the goal's own session, at end of life, after explicit user confirmation. Write the final report (`reports/report.md`) and log `goal.completed` / `goal.archived`.
+8. **Completion**: integrate milestone branches into the target branch; write the cost report (Cost reporting); archive (Completion and archive); if `notify_target` is set and `notify_on` allows, announce completion via `hermes send`; user-confirmed teardown — prune merged worktrees (`git worktree remove`), close goal-created workspaces, remove the Warp tab config, then `herdr --session <goal> session stop <goal>` and `herdr session delete <goal>` as the **FINAL** action. This is the one sanctioned exception to never stopping a server: it is the goal's own session, at end of life, after explicit user confirmation. Write the final report (`reports/report.md`) and log `goal.completed` / `goal.archived`.
 
 ## Milestone lead
 
 1. **Decompose** the milestone into tasks with **disjoint scopes** (split by files/directories, not just features — each worker gets its own worktree, but collisions still cost merge pain). Keep at most `max_parallel_workers_per_milestone` in flight; log `task.created` per task.
-2. Per task — create the worktree (NEVER inside the main working tree; convention `<repo>/../<repo-name>-orchestrations/<goal>/<task-slug>/`), tab, agent, alias:
+2. Per task — choose the worker kind (default `--kind omp`; `--kind hermes` for non-code task shapes, see Heterogeneous workers), then create the worktree (NEVER inside the main working tree; convention `<repo>/../<repo-name>-orchestrations/<goal>/<task-slug>/`), tab, agent, alias:
 
 ```bash
 git worktree add <path> -b orch/<goal>/<task> [<base>]
@@ -224,6 +224,21 @@ ESCALATION <type>: <one-line summary>
 
 6. `done` means "request verification" — the verifier decides, not you.
 7. You may spawn in-process subagents freely (`task`, `/vibe`) — they are yours, not the fleet's.
+
+## Heterogeneous workers (Hermes)
+
+herdr lists `--kind hermes` natively, but on the current pair (herdr 0.9.5 stable × Hermes 0.22.4) **agent detection fails** — the Hermes TUI boots in the pane but never classifies, so `agent start` times out. The validated protocol is try-then-fallback:
+
+- **OMP is the default** for every code task. Spawn a Hermes worker only for task shapes where Hermes is the stronger tool — real-profile browser work (it runs a browser harness), ops/messaging/webhook territory, web research with logged-in sessions. One task, one worker, one worktree — kinds never share a task.
+- **Try the agent surface first**: `agent start <name> --kind hermes --pane <pane> --timeout 180000`. If it succeeds (a future herdr/Hermes pair may fix detection), everything works like an OMP worker minus intercom.
+- **On timeout/`agent_pane_busy`, use the pane protocol** — the Hermes TUI is already running in the pane; drive it with pane commands:
+  1. Dispatch a short pointer, never the brief itself: `herdr --session <goal> pane run <pane> "Read the task brief at <ledger>/briefs/<task-id>.md and execute it exactly."`
+  2. **Submit it**: `herdr --session <goal> pane send-keys <pane> enter` — the TUI swallows `pane run`'s Enter; without this keypress the message sits unsubmitted in the input box (verified the hard way).
+  3. Settle: `herdr --session <goal> pane wait-output <pane> --match "ESCALATION" --timeout 240000` (chunked; the result carries `matched_line`).
+  4. Read: `herdr --session <goal> pane read <pane> --source recent-unwrapped --lines 200`.
+- Hermes workers have **no intercom and no lifecycle states** — they never appear in `agent list`, so patrol heartbeats do not cover them; staleness = `wait-output` timeout plus comparing pane reads. Their escalations are ledger-first: the brief makes them append the `escalation.raised` event to `events.jsonl` AND end their reply with the `ESCALATION <type>:` line. Everything else (convergence loop, acceptance, worktree discipline, reports) is identical — briefs point at this file's absolute path (`skill://` will not resolve).
+- Verification stays OMP-side: the verifier is always an OMP task subagent.
+- Cost: Hermes sessions are indexed by AgentsView too — query `get_usage_summary` once per fleet kind (`agent: "omp"`, `agent: "hermes"`) and sum (see Cost reporting).
 
 ## Verification
 
@@ -277,7 +292,7 @@ Operating notes:
 
 ## Cost reporting
 
-On completion, the ctl queries the AgentsView MCP `get_usage_summary` (write JSON args to `xd://mcp__agentsview_get_usage_summary`; filter date range = the goal window from ledger timestamps, agent=omp) and writes the numbers plus the caveat — the window may include unrelated OMP activity; worktree cwds may register as separate projects — into `report.md` and the ledger. Procedure: **Cost reporting** section of `reference.md`. If the MCP is unavailable, state "cost unavailable" — **never fabricate numbers**. Log `cost.reported`.
+On completion, the ctl queries the AgentsView MCP `get_usage_summary` (write JSON args to `xd://mcp__agentsview_get_usage_summary`; filter date range = the goal window from ledger timestamps) once per fleet kind — `agent: "omp"`, plus `agent: "hermes"` if Hermes workers ran — and writes the summed numbers plus the caveat — the window may include unrelated agent activity; worktree cwds may register as separate projects — into `report.md` and the ledger. Procedure: **Cost reporting** section of `reference.md`. If the MCP is unavailable, state "cost unavailable" — **never fabricate numbers**. Log `cost.reported`.
 
 ## Completion and archive
 
