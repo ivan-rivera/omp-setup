@@ -219,6 +219,28 @@ install-herdr:
         *) echo "  OMP integration: $omp_line" ;;
     esac
 
+# Start the shared Hindsight memory server (bank data persists in the hindsight-data
+# Docker volume). LLM = z-ai/glm-5.3-flash via OpenRouter — needs OPENROUTER_API_KEY
+# in your shell. A local 7B (qwen2.5:7b) was tried first: fully local, but its
+# consolidation calls exceeded the 120s default LLM timeout (retry-looped at full
+# CPU) and, timeout raised, still ran the laptop hot for hours. The flash model
+# does extraction/consolidation in seconds. HINDSIGHT_API_LLM_TIMEOUT=600 kept as
+# headroom; MAX_CONCURRENT=4 caps burst parallelism.
+hindsight-up:
+    docker start hindsight 2>/dev/null || docker run -d --name hindsight --restart unless-stopped \
+        -p 8888:8888 -p 9999:9999 \
+        -e HINDSIGHT_API_LLM_PROVIDER=openrouter \
+        -e HINDSIGHT_API_LLM_MODEL=z-ai/glm-5.3-flash \
+        -e HINDSIGHT_API_LLM_API_KEY="${OPENROUTER_API_KEY}" \
+        -e HINDSIGHT_API_LLM_TIMEOUT=600 \
+        -e HINDSIGHT_API_LLM_MAX_CONCURRENT=4 \
+        -v hindsight-data:/home/hindsight/.pg0 \
+        ghcr.io/vectorize-io/hindsight:latest
+
+# Stop the Hindsight memory server
+hindsight-down:
+    docker stop hindsight
+
 # Full setup: install everything and symlink harness
 setup: install link
 
@@ -381,7 +403,7 @@ test:
 
     echo ""
     echo "=== Rules ==="
-    for r in python-style typescript-style pr-size-limit omp-tips intercom; do
+    for r in python-style typescript-style pr-size-limit omp-tips intercom incidental-finds; do
         [ -f ~/.omp/agent/rules/$r.md ] && pass "$r" || fail "$r missing"
     done
 
@@ -405,7 +427,9 @@ test:
     echo "=== OMP Config ==="
     grep -q "disabledProviders" ~/.omp/agent/config.yml && pass "disabledProviders" || fail "disabledProviders missing"
     grep -q "modelRoles" ~/.omp/agent/config.yml && pass "modelRoles" || fail "modelRoles missing"
-    grep -q "backend: mnemopi" ~/.omp/agent/config.yml && pass "memory = mnemopi" || fail "memory backend"
+    grep -q "backend: hindsight" ~/.omp/agent/config.yml && pass "memory = hindsight" || fail "memory backend"
+    grep -q "hindsight" ~/.omp/agent/mcp.json && pass "Hindsight MCP" || fail "Hindsight MCP missing"
+    docker ps | grep -q hindsight && pass "hindsight server container" || fail "hindsight server not running (docker start hindsight)"
     grep -q "openrouter" ~/.omp/agent/models.yml && pass "OpenRouter provider" || fail "OpenRouter missing"
     grep -q "context7" ~/.omp/agent/mcp.json && pass "Context7 MCP" || fail "Context7 missing"
     grep -q "tavily" ~/.omp/agent/mcp.json && pass "Tavily MCP" || fail "Tavily missing"

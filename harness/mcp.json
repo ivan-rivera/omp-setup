@@ -17,6 +17,10 @@
       "type": "stdio",
       "command": "agentsview",
       "args": ["mcp"]
+    },
+    "hindsight": {
+      "type": "http",
+      "url": "http://localhost:8888/mcp/ivr/"
     }
   }
 }

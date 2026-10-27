@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Agents vault (shared project memory)
 
-The Obsidian vault at `/Users/ivr/Documents/hive` has an `Agents/` folder shared by multiple agents on this machine. **OMP reads and writes only the `Agents/OMP/` subdirectory** — the sibling `Agents/Hermes/` belongs to Hermes and must never be written. It is a **pull-based, human-editable data store** for durable, project-scoped context: the user reads and edits it in Obsidian; OMP works on the same plain markdown files with the usual file tools (`read`, `write`, `edit`, `grep`, `glob`) — no Obsidian app, API, or plugin required. If the vault path is ever missing, ask the user instead of guessing a new one.
+The Obsidian vault at `/Users/ivr/Documents/hive` has an `Agents/` folder shared by multiple agents on this machine. **OMP reads and writes only the `Agents/OMP/` subdirectory** — the sibling `Agents/Hermes/` belongs to Hermes and must never be written. It is a **pull-based, human-editable data store** for durable, project-scoped context: the user reads and edits it in Obsidian; OMP works on the same plain markdown files with the usual file tools (`read`, `write`, `edit`, `grep`, `glob`) — no Obsidian app, API, or plugin required. The vault is also synced one-way into the shared Hindsight memory bank (`hindsight-obsidian-sync`), so both agents can recall its content semantically — the files remain the source of truth. If the vault path is ever missing, ask the user instead of guessing a new one.
 
 ## When to use
 
@@ -17,7 +17,7 @@ The Obsidian vault at `/Users/ivr/Documents/hive` has an `Agents/` folder shared
 
 ## Division of labor (do not blur these)
 
-- Mnemopi long-term memory (`xd://recall` / `xd://retain`): small durable facts, preferences, environment facts — recalled automatically.
+- Hindsight long-term memory (`xd://recall` / `xd://retain`, shared bank `ivr` with Hermes and the vault sync): small durable facts, preferences, environment facts — recalled automatically at session start.
 - Skills: procedures and workflows.
 - Session history: current-task detail only.
 - **`Agents/OMP/`: bulky, evolving, project/task-scoped state** — loaded only when deliberately consulted.
