@@ -36,15 +36,15 @@ task:
     task: "@agentic"
     sonic: "@agentic"
 memory:
-  backend: mnemopi
-memories:
-  maxRolloutAgeDays: 30
-  minRolloutIdleHours: 12
-  summaryInjectionTokenLimit: 3000
-mnemopi:
-  retainEveryNTurns: 4
-  recallLimit: 8
-  injectionTokenLimit: 3000
+  backend: hindsight
+hindsight:
+  apiUrl: http://localhost:8888
+  # One shared bank for OMP + Hermes + vault sync. OMP writes project:<repo>-tagged
+  # memories (per-project-tagged scoping) and recalls project-tagged + untagged global.
+  bankId: ivr
+  # last-turn keeps retain prompts small (lower token cost on the cloud LLM);
+  # full-session re-feeds the whole transcript every retain; revert for max recall.
+  retainMode: last-turn
 setupVersion: 2
 composer:
   shape: band
