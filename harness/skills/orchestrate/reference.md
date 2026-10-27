@@ -171,6 +171,14 @@ Escalation grammar (first line of any escalation): `ESCALATION <type>: <one-line
 Report: write <ledger>/reports/<task-id>.md (what changed, evidence, checks run); log every iteration as a task.iteration event; escalate `done` to request verification.
 ```
 
+### Non-OMP (Hermes) worker brief
+
+Same contract as the task brief, with three substitutions for agents that lack the OMP harness and the intercom plugin:
+
+- Replace the `skill://orchestrate` line with the absolute path to this skill (`/abs/path/to/harness/skills/orchestrate/SKILL.md`, section "Worker") — or inline the worker protocol directly when the worker cannot read OMP-harness paths.
+- Replace the intercom escalation line with: append the `escalation.raised` event to `<ledger>/events.jsonl` yourself AND end your turn with the `ESCALATION <type>: <one-line summary>` line as your **final reply** — under the pane protocol the lead matches it with `pane wait-output --match "ESCALATION"` (see Heterogeneous workers in SKILL.md for the try-then-fallback dispatch: `agent start --kind hermes` first, pane pointer + explicit `send-keys enter` when detection fails).
+- Worktree, branch, convergence loop, acceptance, and reports are identical.
+
 ### Verifier brief
 
 ```markdown
@@ -305,7 +313,7 @@ The agent list JSON is `{"id":"cli:agent:list","result":{"agents":[...]}}`; each
 On completion, the ctl reports cost via the AgentsView MCP. **Never fabricate numbers** — if the MCP is unavailable, write "cost unavailable".
 
 1. Read the goal window from the ledger: `goal.created` → `goal.completed`.
-2. Query the MCP by writing JSON args to `xd://mcp__agentsview_get_usage_summary`:
+2. Query the MCP by writing JSON args to `xd://mcp__agentsview_get_usage_summary` — once per fleet kind, summing the results (`agent: "omp"` always; add `agent: "hermes"` if Hermes workers ran):
    ```json
    {"from": "<goal.created date, YYYY-MM-DD>", "to": "<goal.completed date, YYYY-MM-DD>", "agent": "omp"}
    ```
@@ -313,7 +321,18 @@ On completion, the ctl reports cost via the AgentsView MCP. **Never fabricate nu
 4. Append a `cost.reported` event to `<ledger>/events.jsonl`.
 5. Include this caveat verbatim:
 
-> Cost figures cover the goal's time window filtered to agent `omp`; the window may include unrelated OMP activity, and worktree cwds may register as separate projects, so totals are an upper bound on the goal's true cost.
+> Cost figures cover the goal's time window filtered to the fleet's agent kinds; the window may include unrelated agent activity, and worktree cwds may register as separate projects, so totals are an upper bound on the goal's true cost.
+
+## Notifications (gateway)
+
+Out-of-band delivery of `needs-human` escalations and goal completion to the user's messaging platforms, via the local Hermes gateway — **no LLM, no agent turn**, just credential reuse:
+
+```bash
+hermes send -t <notify_target> "orchestrate/<goal>: ESCALATION needs-human — <summary> (ctl tab: herdr session attach <goal>)"
+```
+
+- `notify_target` comes from the formula's `[vars]` (e.g. `slack:C0C9JFJG943`, `telegram`, `discord:#ops`); **empty means off** — the default. `notify_on` gates what is sent: `escalations` (needs-human only), `all` (plus completion), `none`.
+- Run it from plain bash (the ctl or lead handling the escalation); never spin an agent turn for a notification.
 
 ## Archive procedure
 

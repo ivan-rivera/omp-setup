@@ -18,6 +18,10 @@ require_acceptance_commands = true
 worker_model = ""
 # When the goal coordinator notifies the user: escalations | all | none.
 notify_on = "escalations"
+# Out-of-band delivery target for needs-human escalations and completion
+# (hermes send -t <target>): e.g. "slack:C0C9JFJG943", "telegram", "discord:#ops".
+# Empty string = off (default) — nothing leaves the machine unless you opt in.
+notify_target = ""
 
 # Control pipeline. These step ids are reserved and have fixed semantics;
 # the orchestrator executes them in dependency order, not file order.
