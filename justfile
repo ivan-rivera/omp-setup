@@ -398,7 +398,7 @@ test:
 
     echo ""
     echo "=== Commands ==="
-    for c in intro onboard briefing; do
+    for c in intro onboard briefing merge-prs; do
         [ -f ~/.omp/agent/commands/$c.md ] && pass "$c" || fail "$c missing"
     done
 
@@ -439,7 +439,7 @@ test:
     echo "=== README Sync ==="
     # README.md is the capability inventory: every agent, skill, command, rule,
     # fetched skill, and MCP must appear in it (see .omp/rules/harness-dev.md).
-    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault orchestrate pr-briefing ppt-master brag brag-slim composio-cli intro onboard briefing python-style typescript-style pr-size-limit omp-tips intercom incidental-finds context7 tavily hindsight agentsview"
+    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault orchestrate pr-briefing ppt-master brag brag-slim composio-cli intro onboard briefing merge-prs python-style typescript-style pr-size-limit omp-tips intercom incidental-finds context7 tavily hindsight agentsview"
     for name in $readme_names; do
         grep -qwi "$name" "{{ readme }}" && pass "README mentions $name" || fail "README.md missing '$name' (see .omp/rules/harness-dev.md)"
     done
