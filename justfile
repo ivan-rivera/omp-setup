@@ -220,18 +220,20 @@ install-herdr:
     esac
 
 # Start the shared Hindsight memory server (bank data persists in the hindsight-data
-# Docker volume). LLM extraction runs on local Ollama qwen2.5:7b. HINDSIGHT_API_LLM_TIMEOUT=600
-# is load-bearing: the 120s default kills >2min consolidation calls on a local 7B and
-# they retry-loop forever (fans at 100%). MAX_CONCURRENT=2 caps extraction bursts.
+# Docker volume). LLM = z-ai/glm-5.3-flash via OpenRouter — needs OPENROUTER_API_KEY
+# in your shell. A local 7B (qwen2.5:7b) was tried first: fully local, but its
+# consolidation calls exceeded the 120s default LLM timeout (retry-looped at full
+# CPU) and, timeout raised, still ran the laptop hot for hours. The flash model
+# does extraction/consolidation in seconds. HINDSIGHT_API_LLM_TIMEOUT=600 kept as
+# headroom; MAX_CONCURRENT=4 caps burst parallelism.
 hindsight-up:
     docker start hindsight 2>/dev/null || docker run -d --name hindsight --restart unless-stopped \
         -p 8888:8888 -p 9999:9999 \
-        -e HINDSIGHT_API_LLM_PROVIDER=ollama \
-        -e HINDSIGHT_API_LLM_MODEL=qwen2.5:7b \
-        -e HINDSIGHT_API_LLM_BASE_URL=http://host.docker.internal:11434 \
-        -e HINDSIGHT_API_LLM_OLLAMA_NUM_CTX=16384 \
+        -e HINDSIGHT_API_LLM_PROVIDER=openrouter \
+        -e HINDSIGHT_API_LLM_MODEL=z-ai/glm-5.3-flash \
+        -e HINDSIGHT_API_LLM_API_KEY="${OPENROUTER_API_KEY}" \
         -e HINDSIGHT_API_LLM_TIMEOUT=600 \
-        -e HINDSIGHT_API_LLM_MAX_CONCURRENT=2 \
+        -e HINDSIGHT_API_LLM_MAX_CONCURRENT=4 \
         -v hindsight-data:/home/hindsight/.pg0 \
         ghcr.io/vectorize-io/hindsight:latest
 

@@ -42,7 +42,7 @@ hindsight:
   # One shared bank for OMP + Hermes + vault sync. OMP writes project:<repo>-tagged
   # memories (per-project-tagged scoping) and recalls project-tagged + untagged global.
   bankId: ivr
-  # last-turn: retain only the newest turns — cheap on local 7B extraction.
+  # last-turn keeps retain prompts small (lower token cost on the cloud LLM);
   # full-session re-feeds the whole transcript every retain; revert for max recall.
   retainMode: last-turn
 setupVersion: 2
