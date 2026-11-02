@@ -15,6 +15,17 @@ providers:
           openRouterRouting:
             order: [z-ai, siliconflow, novita, baidu, parasail, akashml, gmicloud]
 
+  # Local Qwen3.8-27B heretic (Splash engine, DFlash2 speculative decoding).
+  # Started with: splash serve --model ajgazin/Qwen3.8-27B-Heretic-unsloth-GGUF:UD-Q5_K_M
+  # (serves on 127.0.0.1:8000; OpenAI-compatible; model id =
+  # ajgazin/Qwen3.8-27B-Heretic-unsloth-GGUF:UD-Q5_K_M)
+  local-qwen:
+    baseUrl: http://127.0.0.1:8000
+    api: openai-completions
+    auth: none
+    discovery:
+      type: openai-models-list
+
   ollama:
     baseUrl: http://127.0.0.1:11434
     api: openai-responses
@@ -26,12 +37,15 @@ retry:
   fallbackChains:
     # Working models (glm-5.3) fall back to flash-class peers — never to the oracle.
     "@default":
+      - openrouter/qwen/qwen3.8-flash
       - openrouter/google/gemini-3.8-flash
       - openrouter/deepseek/deepseek-v4.1-flash
     "@code":
+      - openrouter/qwen/qwen3.8-flash
       - openrouter/google/gemini-3.8-flash
       - openrouter/deepseek/deepseek-v4.1-flash
     "@agentic":
+      - openrouter/qwen/qwen3.8-flash
       - openrouter/deepseek/deepseek-v4.1-flash
       - openrouter/google/gemini-3.8-flash
     # Oracle outage falls back to the AA Intelligence #1 model.
