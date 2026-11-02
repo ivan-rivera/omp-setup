@@ -28,13 +28,13 @@ notify_target = ""
 [[steps]]
 id = "clarify"
 title = "Clarify objective"
-description = "Interview the user until objective, scope, and constraints are unambiguous; resolve the suitability gate."
+description = "Interview the user until objective, scope, constraints, and the mechanism (fleet vs in-process) are unambiguous; resolve the suitability gate before any dispatch."
 needs = []
 
 [[steps]]
 id = "charter"
 title = "Write charter"
-description = "Record goal.md: objective, scope, non-goals, constraints, acceptance criteria, formula, and links."
+description = "Record a THIN goal.md: objective, scope, non-goals, constraints, acceptance criteria (point at the source doc's checklist when present), objective→milestone map, and links — no task-level decomposition (leads own that)."
 needs = ["clarify"]
 
 [[steps]]
@@ -102,6 +102,12 @@ oracle_retries = 1
 # Verification: fresh subagent with no implementation context judges each task.
 [policies.verification]
 independent = true
+
+# Review: human approval gates before fleet work runs.
+[policies.review]
+# Which plans require human approval in the review UI:
+# "charter" = goal.md before bootstrap; "tasks" = each milestone's task plan before worker dispatch.
+gates = ["charter", "tasks"]
 
 # Health patrol: plain shell-loop pane (no LLM) appending heartbeats.
 [policies.health]

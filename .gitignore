@@ -63,3 +63,11 @@ harness/predict/
 
 # Gas City runtime state
 .gc/
+
+# OMP runtime content blobs + python cache
+harness/blobs/
+__pycache__/
+*.pyc
+
+# Local secrets — never commit
+cloud-admin-token.txt

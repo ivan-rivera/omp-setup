@@ -8,11 +8,13 @@ Lives at `.orchestrate/<goal-slug>/` in the project repo (gitignored). Workers r
 
 ```
 .orchestrate/<goal-slug>/
-├── goal.md            charter: objective, scope, non-goals, constraints, acceptance, formula, links
+├── goal.md            charter: objective, scope, non-goals, constraints, acceptance, objective→milestone map, links
 ├── ledger.json        machine state (schema below)
 ├── events.jsonl       append-only event log, one JSON object per line
 ├── heartbeats.jsonl   patrol snapshots: {"ts": "...", "agents": {"<name>": "<state>", ...}}
 ├── briefs/            <task-id>.md — the exact dispatched briefs (resume compares brief_sha)
+├── notes/            non-binding intake residue (harness patterns, worked math) leads MAY consult
+├── plans/           review docs + verdict JSONs (charter + per-milestone task plans)
 ├── reports/           worker reports, verifier verdicts, final report.md
 └── STOP               (optional) presence halts the health patrol loop
 ```
@@ -110,6 +112,8 @@ One JSON object per line: `{"ts": "<ISO-8601>", "type": "<type>", "actor": "<age
 | `oracle.consulted` | lead | `task_id`, `diagnosis_path` |
 | `worker.nudged` | lead | `task_id`, `agent` |
 | `heartbeat.stale` | lead | `task_id`, `agent`, `last_change` |
+| `review.requested` | origin / lead | `doc`, `url` |
+| `review.verdict` | user (via review server) | `doc`, `verdict`, `comments` |
 | `cost.reported` | ctl | `total_tokens`, `total_cost`, `window` |
 | `goal.completed` | ctl | `report_path` |
 | `goal.archived` | ctl | `archive_path` |
@@ -126,6 +130,38 @@ Written by the health patrol loop only (see **Health patrol loop**): one line pe
 
 Briefs are the only thing a recipient sees — the sender's context does not travel. Every brief states the ledger's **absolute** path, the repo, and the instruction to read the orchestrate skill section for the recipient's role. Dispatch the exact file stored in `briefs/<task-id>.md`; record its sha256 as `brief_sha`.
 
+### Charter (goal.md) template
+
+The charter is THIN by hard rule (SKILL.md "Goal intake"): objective, scope, constraints, acceptance, and the objective→milestone map — nothing else. Task-level decomposition, implementation specs, worked solutions, and acceptance harnesses are forbidden here; they belong to milestone leads and workers. Keep it under ~100 lines; point at the source document instead of restating it, and park verified residue in `<ledger>/notes/`.
+
+```markdown
+# <Goal title> — Charter
+
+**Objective:** <one line, verifiable>
+
+**Plan of record:** `<path/to/source-doc>` (committed in the repo). This charter binds only where it elaborates the source doc.
+
+**Scope:** <in-scope summary or pointer>
+**Non-goals:** <hard NEVER-build list or pointer>
+
+**Constraints:** <≤10 binding bullets, or pointer to the source doc's constraints section>
+
+**Acceptance (verifier runs these verbatim):**
+- <point at the source doc's own checklist/DoD when it exists; otherwise ≤10 executable checks with expected output>
+
+## Objective → milestone map
+
+| Milestone | Title | Source objectives | Sequencing |
+|---|---|---|---|
+| m1 | <title> | <objective refs from the source doc> | <why first / what depends on it> |
+
+**Policies:** <formula name or "formula defaults": max_iterations, patrol interval, etc.>
+
+## Links
+
+<source doc> · `<ledger>/notes/` (non-binding reference) · repo `<absolute path>`
+```
+
 ### Goal-controller brief
 
 ```markdown
@@ -134,7 +170,7 @@ Role: goal controller (`ctl`) for the herdr session `<goal-slug>`.
 Ledger (absolute): /abs/path/to/repo/.orchestrate/<goal-slug>/
 Repo: /abs/path/to/repo
 Read `skill://orchestrate`, section "Goal controller" — it is your operating manual.
-Scope: own the ledger; create milestone workspaces and leads; resolve cross-milestone dependencies and `block`/`question` escalations; monitor via heartbeats and intercom; on completion integrate, report cost, archive, and tear down.
+Scope: own the ledger; create milestone workspaces and leads; resolve cross-milestone dependencies and `block`/`question` escalations; monitor via heartbeats and intercom; on completion integrate, report cost, archive, and tear down. Lead briefs state each milestone's charter and boundaries — NEVER its task decomposition; each lead decomposes its own milestone.
 Acceptance: every milestone `done` and verified; final report at <ledger>/reports/report.md; goal archived.
 Constraints: never stop the session except as the final teardown step after explicit user confirmation; never blind-approve a blocked agent; parse IDs from JSON responses only.
 Escalations: use the typed escalation grammar (see reference.md "Escalation grammar + handling matrix").
@@ -149,7 +185,7 @@ Role: milestone lead (`<mN>-lead`) for workspace `[mN] <milestone title>` in her
 Ledger (absolute): /abs/path/to/repo/.orchestrate/<goal-slug>/
 Repo: /abs/path/to/repo
 Read `skill://orchestrate`, section "Milestone lead" — it is your operating manual.
-Scope: decompose `<milestone title>` into tasks with disjoint scopes; create one worktree + worker tab + agent per task; dispatch task briefs; run verification; own convergence and oracle escalation; merge verified work into the milestone branch.
+Scope: decompose `<milestone title>` into tasks with disjoint scopes (the decomposition is YOURS — consult `<ledger>/notes/` and the source doc for context, but the task list is your call); create one worktree + worker tab + agent per task; dispatch task briefs; run verification; own convergence and oracle escalation; merge verified work into the milestone branch.
 Acceptance: all tasks in milestone `<mN>` `done` with PASS verdicts; milestone branch merged; milestone status `done`.
 Constraints: task scopes must be disjoint; worktree paths outside the main working tree at <repo>/../<repo-name>-orchestrations/<goal>/<task-slug>/; consult the oracle only after max_iterations failed iterations.
 Escalations: use the typed escalation grammar (see reference.md "Escalation grammar + handling matrix").
@@ -262,6 +298,8 @@ Write `~/.warp/tab_configs/orch_<goal>.toml` — snake_case stem, so every `-` i
 
 ```toml
 name = "Orchestrate <goal>"
+title = "Orchestrate: <goal>"
+color = "cyan"
 
 [[panes]]
 id = "orch_<goal>"
@@ -276,6 +314,22 @@ open "warp://tab_config/orch_<goal>"
 ```
 
 No-Warp or non-macOS fallback: tell the user to run `herdr session attach <goal>` in any terminal.
+
+## Plan review server
+
+`review-server.py` (in this skill's directory, absolute path — e.g. `/Users/<user>/.omp/agent/skills/orchestrate/review-server.py`; worktree agents cannot resolve `skill://`) renders a markdown plan in the browser with anchored comments and Approve / Request changes / Reject buttons, writing the verdict to a JSON file the agent polls. Python 3 stdlib only.
+
+```bash
+# launch detached (same reap hazard as the herdr server):
+python3 -c "import subprocess; subprocess.Popen(['python3','<skill-dir>/review-server.py','--doc','<ledger>/plans/<doc>.md','--out','<ledger>/plans/<doc>.review.json','--ready','<ledger>/plans/<doc>.ready','--port','0'], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)"
+# poll the ready file until it exists, then open the review page for the user:
+open "$(cat <ledger>/plans/<doc>.ready)"
+# poll for the verdict in bounded chunks (the JSON appears atomically):
+#   while [ ! -f <ledger>/plans/<doc>.review.json ]; do sleep 5; done
+# after the verdict, kill the server (port is in the ready URL)
+```
+
+Verdict JSON: `{"verdict": "approved" | "changes_requested" | "rejected", "comments": [{"block_id", "block_text", "comment"}]}`. Semantics: `approved` → proceed; `changes_requested` → incorporate every comment, revise the doc, delete the old `--out`/`--ready` and re-serve; `rejected` → stop and talk to the user (origin) or escalate `needs-human` to `<goal>-ctl` (lead). Docs, ready files, and verdicts are durable ledger artifacts; log `review.requested` (doc, url) and `review.verdict` (doc, verdict, comment count) events.
 
 ## Health patrol loop
 

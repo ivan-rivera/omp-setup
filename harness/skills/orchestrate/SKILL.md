@@ -36,8 +36,10 @@ The canonical flow works from **any** OMP session — it targets a named session
 ## Goal intake
 
 - Take the goal from the prompt, or from a referenced file — **read the file fully** before planning; never plan from its name.
+- **Ask the mechanism question before anything else**: fleet or in-process (`/vibe`, `task`)? If the request arrives with an in-process orchestration contract attached (task-subagent dispatch rules) or is otherwise ambiguous, ask explicitly — an attached contract must not silently select the mechanism, and nothing dispatches until this is settled.
 - Clarify in bounded batches: at most 5 questions, then restate what you have and proceed. Do not interrogate; a charter you restate is cheaper than a questionnaire.
-- Restate the goal as a **charter**: objective, scope, non-goals, constraints, acceptance criteria. Acceptance criteria must be executable checks or commands — the verifier will run them verbatim. The charter becomes `goal.md`.
+- Restate the goal as a **charter**: objective, scope, non-goals, constraints, acceptance criteria, and the objective→milestone map. Acceptance criteria must be executable checks or commands — when the source document already carries a checklist/DoD, point at it instead of restating it; the verifier will run them verbatim. The charter becomes `goal.md` (template: reference.md "Charter (goal.md) template").
+- **Thin charter (hard rule)**: `goal.md` MUST NOT contain task-level decomposition, implementation specs, worked solutions, or acceptance harnesses — decomposition belongs to milestone leads, solutions to workers. Keep it under ~100 lines. Verified residue from intake (harness patterns, worked math) parks in `<ledger>/notes/` as non-binding reference leads MAY consult — never in the charter's binding path.
 - Before planning, check for prior work:
   - `.orchestrate/` in the project repo — a resumable goal (see Non-canonical flows → resume).
   - `~/.omp/orchestration-archive/` — prior completed goals on this project.
@@ -46,7 +48,7 @@ The canonical flow works from **any** OMP session — it targets a named session
 
 ## Suitability gate
 
-Orchestrating a fleet is expensive: **every tab is a full OMP session with its own token burn.** Never fan out work one session should just do.
+Orchestrating a fleet is expensive: **every tab is a full OMP session with its own token burn.** Never fan out work one session should just do. Run this gate at intake, BEFORE the first dispatch — a mechanism chosen late, or defaulted by an attached in-process contract, is how a goal ends up orchestrated twice.
 
 | Situation | Recommendation |
 |---|---|
@@ -59,7 +61,18 @@ Orchestrating a fleet is expensive: **every tab is a full OMP session with its o
 
 When recommending the fleet, state both in your reply: the fan-out rationale (which table row fired) and the cost warning. When recommending against, name the lighter alternative explicitly (`/vibe`, in-process `task`, or the in-session variant). Ambiguity here wastes either tokens or the user's time.
 
-Get **explicit user confirmation** before bootstrapping the fleet — never spawn sessions, worktrees, or tabs on an implied yes.
+Get **explicit user confirmation** before bootstrapping the fleet — never spawn sessions, worktrees, or tabs on an implied yes. With the charter review gate on (the default), the review verdict IS that confirmation; with gates off, ask in chat.
+
+## Plan review gates
+
+The fleet runs human-approved plans. Two gates, both on by default (`policies.review.gates` in the formula; set `gates = []` for fully autonomous runs):
+
+- **Charter gate** (origin, after writing `goal.md`, BEFORE bootstrap): serve the charter for review — the concise objectives → sessions/milestones brief the user approves before anything spawns. `approved` → bootstrap; `changes_requested` → revise the charter per the comments and re-serve; `rejected` → stop and talk to the user.
+- **Task-plan gate** (each milestone lead, after decomposing, BEFORE dispatching workers): write `<ledger>/plans/<mN>-tasks.md` — the milestone slice plus the proposed tasks (id, owned files, one-line goal each, what runs in parallel; NO implementation detail) — serve it, and dispatch only on `approved`. `changes_requested` → revise and re-serve; `rejected` → escalate `needs-human` to `<goal>-ctl`.
+
+Serving + verdict protocol (exact commands: reference.md "Plan review server"): launch `review-server.py` detached on an ephemeral port, `open` the ready-file URL for the user, then poll for the verdict JSON in bounded chunks between other work — never busy-wait a whole turn. Incorporate or explicitly answer every comment. Log `review.requested` and `review.verdict` events; the doc, ready file, and verdict JSON live in `<ledger>/plans/`. After the verdict, kill the server by port.
+
+Patrol note: an agent waiting on a review gate is NOT stale — before nudging, check for a pending review (`<ledger>/plans/*.ready` without a matching `*.review.json`).
 
 ## Formula
 
@@ -107,11 +120,12 @@ The user can type into **any** tab, workers included — a feature, not interfer
 `.orchestrate/<goal-slug>/` in the project repo (gitignored):
 
 ```
-goal.md          charter: objective, scope, non-goals, constraints, acceptance, formula, links
+goal.md          charter: objective, scope, non-goals, constraints, acceptance, objective→milestone map, links
 ledger.json      machine state (full schema in reference.md)
 events.jsonl     append-only event log, one JSON object per line
 heartbeats.jsonl patrol snapshots: {"ts": "...", "agents": {"<name>": "<state>", ...}}
 briefs/          <task-id>.md — the exact dispatched briefs (resume compares brief_sha)
+notes/           non-binding intake residue (harness patterns, worked math) leads MAY consult
 reports/         worker reports, verifier verdicts, final report.md
 ```
 
@@ -119,6 +133,7 @@ reports/         worker reports, verifier verdicts, final report.md
 - Workers live in worktrees → share the ledger by **absolute path**; state the absolute ledger path in every brief (e.g. `/abs/path/to/<repo>/.orchestrate/<goal-slug>/`). A relative path resolves differently inside each worktree — it will silently point at nothing.
 - Memory backends with per-project scoping tag memories by session cwd: fleet sessions in ephemeral worktrees write memories under worktree-path tags that nothing will ever recall once the worktree is pruned — write-only noise, not a coordination channel. Never rely on agent memory for fleet state; the ledger is the durable record.
 - `briefs/` holds the exact dispatched text; resume compares `brief_sha` to detect a re-dispatch with changed content.
+- `notes/` is non-binding reference from intake: browser harness patterns, worked math, integration gotchas. Advice, not contract — leads and workers may consult, ignore, or contradict it; nothing in `notes/` overrides the charter or the source doc.
 - `reports/` is write-per-worker: each worker writes only `reports/<task-id>.md`; the lead writes verifier verdicts; the ctl writes `report.md`.
 - Status vocab — goal/milestone: `planning|active|blocked|done|failed|archived`; task: `pending|dispatched|in_progress|verifying|done|failed|oracle|needs_human`.
 - Event types: `goal.created`, `milestone.created`, `task.created`, `task.dispatched`, `task.iteration`, `task.verification`, `escalation.raised`, `escalation.resolved`, `oracle.consulted`, `worker.nudged`, `heartbeat.stale`, `cost.reported`, `goal.completed`, `goal.archived`.
@@ -129,7 +144,7 @@ reports/         worker reports, verifier verdicts, final report.md
 
 The origin agent bootstraps once and hands off — it does not babysit. You are building the skeleton (session, controller, patrol) and transferring ownership to `ctl`. The origin role is **agent-agnostic**: it needs only a shell, file tools, and the herdr CLI — any capable agent can execute this section (e.g., Hermes: point it at this file's absolute path; `skill://orchestrate` only resolves inside OMP). The `ctl` and leads it spawns are OMP.
 
-1. Derive the goal slug from the charter title; init the ledger: `goal.md`, `ledger.json`, `events.jsonl` with a `goal.created` event.
+1. Derive the goal slug from the charter title; init the ledger: `goal.md` (thin — Goal intake), `ledger.json`, `events.jsonl` with a `goal.created` event, `plans/`, plus `notes/` when intake produced residue worth parking. If the charter review gate is on, serve `goal.md` now (Plan review gates) — do not start the session until it is approved.
 2. Ensure `.orchestrate/` is gitignored.
 3. Start the headless session in its own OS session and poll until it answers:
 
@@ -141,11 +156,12 @@ python3 -c "import subprocess; subprocess.Popen(['herdr','--session','<goal>','s
 
 `start_new_session=True` (POSIX setsid) is load-bearing: a plain `nohup herdr ... &` leaves the server in your tool-shell's process group, and when that shell reaps a long-running job it SIGTERMs the whole group — killing the goal session mid-flight (verified the hard way). The detached server is immune to tool-shell job cleanup.
 
-4. Create the controller workspace (root tab hosts `ctl`):
+4. Create the controller workspace (root tab hosts `ctl`) and rename the root tab — it defaults to label "1"; always rename a root tab to the agent it hosts:
 
 ```bash
 herdr --session <goal> workspace create --label "[ctl] <title>" --cwd <repo> --no-focus
 # JSON: .result.workspace.workspace_id, .result.tab.tab_id, .result.root_pane.pane_id
+herdr --session <goal> tab rename <tab_id> ctl
 ```
 
 5. Start the controller and alias it:
@@ -163,7 +179,7 @@ chmod +x <ledger>/patrol.sh
 herdr --session <goal> pane run <patrol-pane-id> "<ledger>/patrol.sh"
 ```
 
-7. Write the Warp tab config `~/.warp/tab_configs/orch_<goal>.toml` (template in reference.md) and `open "warp://tab_config/orch_<goal>"`. Do this **after** the controller workspace exists — `herdr session attach` onto an empty session creates its own initial workspace, which leaves a stray. No-Warp/non-macOS fallback: tell the user to run `herdr session attach <goal>`.
+7. Write the Warp tab config `~/.warp/tab_configs/orch_<goal>.toml` (template in reference.md — set `title` and `color`, not just `name`: `name` only labels the config in Warp's `+` menu, `title` is what labels the opened tab) and `open "warp://tab_config/orch_<goal>"`. Do this **after** the controller workspace exists — `herdr session attach` onto an empty session creates its own initial workspace, which leaves a stray. No-Warp/non-macOS fallback: tell the user to run `herdr session attach <goal>`.
 
 8. Dispatch the goal-controller brief (template in reference.md):
 
@@ -180,8 +196,8 @@ herdr --session <goal> agent prompt ctl "<brief>" --wait --timeout 300000
 You own the ledger and the milestone fan-out. Loop, never busy-waiting:
 
 1. **Read the ledger** (`ledger.json` + recent `events.jsonl`) — it is the source of truth, not your memory of the conversation. Apply the idempotency rule from Ledger before every create.
-2. **Plan milestones** from the formula: map control steps and work steps to milestones (`kind=milestone` or a step other steps depend on), expand `{{var}}`, evaluate conditions at plan time.
-3. **Create milestone workspaces + leads** using the same command patterns as bootstrap: `workspace create --label "[mN] <title>" --no-focus`, `agent start mN-lead --kind omp --pane <pane-id>`, alias `<goal>-mN-lead` via `pane run`. Log `milestone.created`.
+2. **Plan milestones** from the formula — or from the charter's objective→milestone map when it has one — mapping control steps and work steps to milestones (`kind=milestone` or a step other steps depend on), expanding `{{var}}`, evaluating conditions at plan time. You name milestones and their boundaries; you do NOT decompose them into tasks — each lead owns its own decomposition.
+3. **Create milestone workspaces + leads** using the same command patterns as bootstrap: `workspace create --label "[mN] <title>" --no-focus`, `tab rename <root-tab-id> mN-lead` (root tabs default to label "1" — always rename to the agent they host), `agent start mN-lead --kind omp --pane <pane-id>`, alias `<goal>-mN-lead` via `pane run`. Log `milestone.created`.
 4. **Dispatch lead briefs** (`agent prompt mN-lead "<brief>" --wait --timeout 900000`–`1800000` for code work); save each to `briefs/`. Briefs must be self-contained: milestone charter, decomposition hints, acceptance criteria, ledger absolute path, naming conventions.
 5. **Monitor on a cadence** between your own work: `intercom pending`, `heartbeats.jsonl`, `herdr --session <goal> agent list`. Never busy-wait. Run long waits in bounded chunks — `agent wait <name> --timeout 240000`, re-check, repeat — because tool-shell jobs get reaped around the five-minute mark; a reaped wait is harmless (the prompt was already delivered) as long as the server was launched detached: inspect with `agent get`/`agent read`, never blindly resubmit. A blocked agent rejects input (`agent_blocked`) — read the pane, surface the dialog to the user, never blind-approve.
 6. **Handle escalations** (types in Escalations): `block` — resolve external dependencies and cross-milestone conflicts yourself; `question` — decide and answer; `needs-human` — surface in chat AND the ctl tab (the user is human-in-the-loop there; they type into your tab), and if the formula's `notify_target` is set, deliver it out-of-band via the gateway (`hermes send`, see Notifications in reference.md). Resolve and log `escalation.resolved`.
@@ -191,6 +207,8 @@ You own the ledger and the milestone fan-out. Loop, never busy-waiting:
 ## Milestone lead
 
 1. **Decompose** the milestone into tasks with **disjoint scopes** (split by files/directories, not just features — each worker gets its own worktree, but collisions still cost merge pain). Keep at most `max_parallel_workers_per_milestone` in flight; log `task.created` per task.
+
+   **Task-plan gate** (when `policies.review.gates` includes "tasks"): before creating any worktree, write `<ledger>/plans/<mN>-tasks.md` — your decomposition for approval: proposed task ids, the files each owns, a one-line goal each, and what runs in parallel (no implementation detail). Serve it (Plan review gates), wait for the verdict, incorporate every comment, re-serve on `changes_requested`. Only an `approved` verdict unlocks step 2.
 2. Per task — choose the worker kind (default `--kind omp`; `--kind hermes` for non-code task shapes, see Heterogeneous workers), then create the worktree (NEVER inside the main working tree; convention `<repo>/../<repo-name>-orchestrations/<goal>/<task-slug>/`), tab, agent, alias:
 
 ```bash
