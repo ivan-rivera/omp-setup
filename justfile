@@ -194,11 +194,8 @@ install-agentsview:
     echo "  Web UI: agentsview serve  →  http://127.0.0.1:8080"
     echo "  OMP: the agentsview MCP server (harness/mcp.json) searches this archive in new sessions"
 
-# Install the herdr OMP integration: an OMP extension (~/.omp/agent/extensions/
-# herdr-omp-agent-state.ts, gitignored) that reports OMP lifecycle state to herdr,
-# making idle/working/blocked/done accurate for OMP panes in herdr tabs. Required by
-# the orchestrate skill, which also self-heals this at runtime. Skips
-# gracefully when herdr itself is not installed (get it at https://herdr.dev).
+# Install the optional herdr OMP integration: a gitignored extension that reports
+# OMP lifecycle state to herdr panes. Skips gracefully when herdr is not installed.
 install-herdr:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -337,12 +334,14 @@ status:
     if command -v herdr >/dev/null 2>&1; then
         echo "  Version: $(herdr --version 2>/dev/null | head -1)"
         herdr integration status 2>/dev/null | grep '^omp:' | sed 's/^/  Integration: /' || echo "  Integration: unknown"
-        [ -f ~/.omp/agent/skills/orchestrate/SKILL.md ] \
-            && echo "  Skill: orchestrate installed" \
-            || echo "  Skill: orchestrate missing (harness/skills/)"
     else
         echo "  Not installed (optional — https://herdr.dev)"
     fi
+    echo ""
+    echo "=== Orca phase orchestration ==="
+    [ -f ~/.omp/agent/skills/orca-phase/SKILL.md ] \
+        && echo "  Skill: orca-phase installed" \
+        || echo "  Skill: orca-phase missing (harness/skills/)"
 
 # Verify harness structure and OMP config
 test:
@@ -365,7 +364,7 @@ test:
 
     echo ""
     echo "=== Skills ==="
-    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orchestrate pr-briefing; do
+    for s in brainstorming frontend-design model-scout extension-creator skill-creator ocr-review agents-vault orca-phase pr-briefing; do
         [ -f ~/.omp/agent/skills/$s/SKILL.md ] && pass "$s" || fail "$s missing"
     done
     echo ""
@@ -439,7 +438,7 @@ test:
     echo "=== README Sync ==="
     # README.md is the capability inventory: every agent, skill, command, rule,
     # fetched skill, and MCP must appear in it (see .omp/rules/harness-dev.md).
-    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault orchestrate pr-briefing ppt-master brag brag-slim composio-cli intro onboard briefing merge-prs python-style typescript-style pr-size-limit omp-tips intercom incidental-finds context7 tavily hindsight agentsview"
+    readme_names="frontend backend architect security qa legal finance researcher content-writer data-generator brainstorming frontend-design model-scout skill-creator extension-creator ocr-review agents-vault orca-phase pr-briefing ppt-master brag brag-slim composio-cli intro onboard briefing merge-prs python-style typescript-style pr-size-limit omp-tips intercom incidental-finds context7 tavily hindsight agentsview"
     for name in $readme_names; do
         grep -qwi "$name" "{{ readme }}" && pass "README mentions $name" || fail "README.md missing '$name' (see .omp/rules/harness-dev.md)"
     done

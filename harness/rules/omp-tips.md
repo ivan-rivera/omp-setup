@@ -54,7 +54,7 @@ If the user's natural-language request matches a command, skill, or keyword belo
 | `/skill:pr-briefing` | wants a PR briefed/explained in plain language, with key changes, implications, and gotchas; also fires automatically when a PR is released |
 | `/skill:ocr-review` | wants an independent AI code review of a diff, commit, or branch before shipping a PR |
 | `/skill:agents-vault` | wants OMP to read or write project notes, handoffs, or decision records in the shared Obsidian vault (`~/Documents/hive`) |
-| `/skill:orchestrate` | wants to run a goal as a coordinated agent fleet — a herdr goal session with milestone workspaces, coordinator + worker tabs, a shared ledger, and convergent verification |
+| `/skill:orca-phase` | wants to plan and supervise an approved multi-PR phase with Orca worktree lanes and one supervisor |
 | `/skill:impeccable` | wants frontend/UI design work: shaping, critique, polish, audit, bolder/quieter, animation, or a design-system pass |
 | `/skill:ppt-master` | wants a slide deck, presentation, or PPTX generated from a topic or document, or an existing deck beautified, restyled, filled, animated, or narrated |
 | `/skill:brag` | wants a short, shareable launch video for a project or live site URL — music, motion, share copy (installed via `just install-brag`) |
