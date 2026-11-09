@@ -21,6 +21,13 @@
     "hindsight": {
       "type": "http",
       "url": "http://localhost:8888/mcp/ivr/"
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LINEAR_API_KEY}"
+      }
     }
   }
 }
