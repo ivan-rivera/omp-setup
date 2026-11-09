@@ -26,3 +26,13 @@ Architecture: `default` (general-purpose) / `code` (code generation) / `agentic`
 - model-scout SKILL.md rewritten for the 4-role architecture
 
 **Unchanged:** providers (models.yml), memory backend (mnemopi), disabledProviders, tools approval.
+
+## 2026-11-06 — default/code: GLM 5.3 → GPT-6.1 Terra
+
+- `default` and `code`: openrouter/z-ai/glm-5.3 -> openrouter/openai/gpt-6.1-terra
+  - Rationale: AA Intelligence Index v5.0 GPT-6.1 Terra (max) = 51 vs GLM-5.3 (max) = 32; $0.96/task is cheapest of AA's top 10. Price $1/$5 per 1M in/out (GLM was $0.07/$1.40). 1.05M context.
+  - Candidates considered and dismissed: Grok 4.7 (AA 35 — sideways at 20x cost), Gemini 4 Argon (AA 50, verbose, intro $2/$10 doubles to $4/$20 on 2026-12-01), Sonnet 5.5 (AA 55, strong but 2x Terra's price; noted for possible later A/B).
+- `agentic` (qwen3.8-flash), `oracle` (opus-5.5), `task` alias, cycleOrder, fallback chains: unchanged.
+- models.yml: glm-5.3 provider-routing override kept (used if glm-5.3 returns as a fallback/reference); Terra is single-provider (OpenAI) — no override needed.
+- At the time, the harness had no reasoning-effort config; reasoning models without an explicit level could default to max effort upstream. Subsequently addressed with `defaultThinkingLevel: auto` and `providers.autoThinkingMaxEffort: xhigh`.
+- Hermes side (same date): main model, delegation model, and `default` alias all switched to openai/gpt-6.1-terra with medium reasoning effort.

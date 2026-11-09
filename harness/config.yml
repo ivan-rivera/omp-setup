@@ -18,13 +18,13 @@ commands:
 tools:
   approval: write
 modelRoles:
-  # Four conceptual models (see skills/model-scout). Working lineup 2026-11-02:
-  # default/code GLM 5.3, agentic Qwen3.8 Flash.
+  # Four conceptual models (see skills/model-scout). Current working lineup:
+  # default/code GPT-6.1 Terra, agentic Qwen3.8 Flash.
   # default: general-purpose workhorse (intelligence benchmarks)
   # code: code generation (coding benchmarks) | agentic: task execution (agentic benchmarks)
   # Oracle: top-tier consult — ONLY user-approved paths (/advisor on, Ctrl+P). Never automatic.
-  default: openrouter/z-ai/glm-5.3
-  code: openrouter/z-ai/glm-5.3
+  default: openrouter/openai/gpt-6.1-terra
+  code: openrouter/openai/gpt-6.1-terra
   agentic: openrouter/qwen/qwen3.8-flash
   task: "@agentic"
   oracle: openrouter/anthropic/claude-opus-5.5
@@ -51,3 +51,6 @@ composer:
   shape: band
 temperature: 0.6
 minP: 0.05
+defaultThinkingLevel: auto
+providers:
+  autoThinkingMaxEffort: xhigh

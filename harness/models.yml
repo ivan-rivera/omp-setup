@@ -3,12 +3,13 @@ providers:
     baseUrl: https://openrouter.ai/api/v1
     apiKey: OPENROUTER_API_KEY
     api: openai-completions
-    # glm-5.3 is served by ~40 OpenRouter endpoints at mixed quantization
-    # (fp4..fp8); fp4/nvfp4 hosts intermittently emit degenerate "token
-    # salad". Prefer the official z.ai endpoint plus reputable fp8 hosts;
-    # OpenRouter falls back to the remaining endpoints only if every
-    # listed host is down (provider.order, see openrouter.ai/docs/
-    # provider-routing). Oracle/other models are unaffected (per-model).
+    # glm-5.3 routing kept for reference/fallback use: it is served by ~40
+    # OpenRouter endpoints at mixed quantization (fp4..fp8); fp4/nvfp4 hosts
+    # intermittently emit degenerate "token salad". Prefer the official z.ai
+    # endpoint plus reputable fp8 hosts; OpenRouter falls back to the remaining
+    # endpoints only if every listed host is down (provider.order, see
+    # openrouter.ai/docs/provider-routing). GPT-6.1 Terra is OpenAI-served
+    # only — no routing override needed.
     modelOverrides:
       z-ai/glm-5.3:
         compat:
@@ -35,7 +36,7 @@ providers:
 
 retry:
   fallbackChains:
-    # Working models (glm-5.3) fall back to flash-class peers — never to the oracle.
+    # Working models fall back to flash-class peers — never to the oracle.
     "@default":
       - openrouter/qwen/qwen3.8-flash
       - openrouter/google/gemini-3.8-flash
