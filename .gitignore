@@ -6,6 +6,7 @@ harness/config.yml.lock
 harness/last-changelog-version
 harness/sessions/
 harness/terminal-sessions/
+harness/intercom/
 # Vendored third-party payloads (installed by `just install-ppt-master`)
 vendor/
 
