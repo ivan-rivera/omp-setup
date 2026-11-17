@@ -46,7 +46,7 @@ hindsight:
   # last-turn keeps retain prompts small (lower token cost on the cloud LLM);
   # full-session re-feeds the whole transcript every retain; revert for max recall.
   retainMode: last-turn
-setupVersion: 2
+setupVersion: 3
 composer:
   shape: band
 temperature: 0.6
