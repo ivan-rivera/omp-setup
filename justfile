@@ -223,17 +223,23 @@ install-herdr:
 # consolidation calls exceeded the 120s default LLM timeout (retry-looped at full
 # CPU) and, timeout raised, still ran the laptop hot for hours. The flash model
 # does extraction/consolidation in seconds. HINDSIGHT_API_LLM_TIMEOUT=600 kept as
-# headroom; MAX_CONCURRENT=4 caps burst parallelism.
+# headroom; MAX_CONCURRENT=4 caps burst parallelism. REFLECT_WALL_TIMEOUT=900 because
+# mental-model refreshes overran the 300s default under load.
+# `docker start` keeps an existing container's flags: remove it to apply changes here.
+# Never `docker commit` this container: its env, including the API key, enters the image.
+# Start Hindsight: localhost-only, digest-pinned (v1.1.0), key passed at runtime.
 hindsight-up:
-    docker start hindsight 2>/dev/null || docker run -d --name hindsight --restart unless-stopped \
-        -p 8888:8888 -p 9999:9999 \
+    docker start hindsight 2>/dev/null || HINDSIGHT_API_LLM_API_KEY="${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is not set}" docker run -d --name hindsight --restart unless-stopped \
+        -p 127.0.0.1:8888:8888 -p '[::1]:8888:8888' \
+        -p 127.0.0.1:9999:9999 -p '[::1]:9999:9999' \
         -e HINDSIGHT_API_LLM_PROVIDER=openrouter \
         -e HINDSIGHT_API_LLM_MODEL=z-ai/glm-5.3-flash \
-        -e HINDSIGHT_API_LLM_API_KEY="${OPENROUTER_API_KEY}" \
+        -e HINDSIGHT_API_LLM_API_KEY \
         -e HINDSIGHT_API_LLM_TIMEOUT=600 \
         -e HINDSIGHT_API_LLM_MAX_CONCURRENT=4 \
+        -e HINDSIGHT_API_REFLECT_WALL_TIMEOUT=900 \
         -v hindsight-data:/home/hindsight/.pg0 \
-        ghcr.io/vectorize-io/hindsight:latest
+        ghcr.io/vectorize-io/hindsight@sha256:50311d02b4d5d2b7c5242bd336edf8735df8374eaad496a92f49c83b37d2aa06
 
 # Stop the Hindsight memory server
 hindsight-down:
